@@ -19,4 +19,10 @@
     <string name="entradas_titulo">Entradas</string>
     <string name="conectado">Conectado</string>
     <string name="sin_senal">Sin señal</string>
+    <string name="ayuda_entradas">Mantén OK sobre un HDMI para ponerle nombre</string>
+    <string name="nombrar_entrada">Nombre para %1$s</string>
+    <string name="nombre_ejemplo">PC, TV Box, Consola…</string>
+    <string name="guardar">Guardar</string>
+    <string name="quitar_nombre">Quitar nombre</string>
+    <string name="cancelar">Cancelar</string>
 </resources>

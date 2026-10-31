@@ -18,6 +18,19 @@ object Entradas {
         val esCable: Boolean,
     )
 
+    private fun prefs(ctx: Context) = ctx.getSharedPreferences("inicio", Context.MODE_PRIVATE)
+
+    /** Nombre que el usuario le puso a una entrada (por ejemplo "PC"), o null. */
+    fun nombrePropio(ctx: Context, id: String): String? =
+        prefs(ctx).getString("nombre_entrada:$id", null)?.takeIf { it.isNotBlank() }
+
+    /** Guarda el nombre; vacío lo borra. */
+    fun ponerNombre(ctx: Context, id: String, nombre: String) {
+        val e = prefs(ctx).edit()
+        if (nombre.isBlank()) e.remove("nombre_entrada:$id") else e.putString("nombre_entrada:$id", nombre.trim())
+        e.apply()
+    }
+
     private fun tim(ctx: Context) = ctx.getSystemService(Context.TV_INPUT_SERVICE) as? TvInputManager
 
     /**
@@ -69,7 +82,8 @@ object Entradas {
                 val equipo = todas.firstOrNull { it.parentId == info.id }
                     ?.let { (it.loadCustomLabel(ctx) ?: it.loadLabel(ctx)).toString() }
                 val nombre = (info.loadCustomLabel(ctx) ?: info.loadLabel(ctx)).toString()
-                Entrada(info.id, nombre, equipo, conectada(info.id), false)
+                // El nombre propio gana; si no hay, el que informa el equipo por HDMI-CEC
+                Entrada(info.id, nombre, nombrePropio(ctx, info.id) ?: equipo, conectada(info.id), false)
             }
             .sortedBy { it.nombre }
         return lista

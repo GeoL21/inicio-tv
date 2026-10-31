@@ -245,6 +245,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/ayuda_entradas"
+                android:textColor="@color/texto_suave"
+                android:textSize="13sp" />
         </LinearLayout>
     </FrameLayout>
 </FrameLayout>

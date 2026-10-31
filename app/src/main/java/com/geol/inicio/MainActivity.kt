@@ -319,7 +319,8 @@ class MainActivity : Activity() {
     private val hoja by lazy { findViewById<View>(R.id.hoja_entradas) }
     private val listaEntradas by lazy { findViewById<LinearLayout>(R.id.lista_entradas) }
 
-    private fun abrirPanelEntradas() {
+    private fun abrirPanelEntradas(enfocar: String? = null) {
+        val enfocarId = enfocar
         val entradas = Entradas.lista(this)
         if (entradas.none { !it.esCable }) { aviso(R.string.sin_hdmi); return }
         listaEntradas.removeAllViews()
@@ -327,6 +328,7 @@ class MainActivity : Activity() {
         var primeraConectada: View? = null
         for (e in entradas) {
             val fila = inflador.inflate(R.layout.fila_entrada, listaEntradas, false)
+            fila.tag = e.id
             fila.findViewById<ImageView>(R.id.icono_entrada)
                 .setImageResource(if (e.esCable) R.drawable.ic_tv else R.drawable.ic_hdmi)
             fila.findViewById<TextView>(R.id.nombre_entrada).text = e.nombre
@@ -345,6 +347,7 @@ class MainActivity : Activity() {
                 cerrarPanelEntradas()
                 if (!Entradas.abrir(this, e.id)) aviso(R.string.no_abre)
             }
+            if (!e.esCable) fila.setOnLongClickListener { nombrarEntrada(e); true }
             if (!e.esCable && e.conectada && primeraConectada == null) primeraConectada = fila
             listaEntradas.addView(fila)
         }
@@ -357,7 +360,42 @@ class MainActivity : Activity() {
         hoja.translationX = 80 * dp
         panel.animate().alpha(1f).setDuration(220).setInterpolator(suave).start()
         hoja.animate().translationX(0f).setDuration(300).setInterpolator(suave).start()
-        (primeraConectada ?: listaEntradas.getChildAt(0))?.requestFocus()
+        barra.animate().alpha(0f).setDuration(200).setInterpolator(suave).start()
+        (enfocarId?.let { id -> (0 until listaEntradas.childCount).map { listaEntradas.getChildAt(it) }.firstOrNull { it.tag == id } }
+            ?: primeraConectada ?: listaEntradas.getChildAt(0))?.requestFocus()
+    }
+
+    private val barra by lazy { findViewById<View>(R.id.barra) }
+
+    /** Ventana para escribir el nombre de una entrada (por ejemplo "PC" o "TV Box"). */
+    private fun nombrarEntrada(e: Entradas.Entrada) {
+        val campo = android.widget.EditText(this).apply {
+            setText(Entradas.nombrePropio(this@MainActivity, e.id) ?: "")
+            setSelection(text.length)
+            hint = getString(R.string.nombre_ejemplo)
+            setSingleLine()
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_DONE
+        }
+        val marco = android.widget.FrameLayout(this).apply {
+            val m = (24 * dp).toInt()
+            setPadding(m, (8 * dp).toInt(), m, 0)
+            addView(campo)
+        }
+        val guardar = {
+            Entradas.ponerNombre(this, e.id, campo.text.toString())
+            abrirPanelEntradas(enfocar = e.id)
+        }
+        val dialogo = android.app.AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
+            .setTitle(getString(R.string.nombrar_entrada, e.nombre))
+            .setView(marco)
+            .setPositiveButton(R.string.guardar) { _, _ -> guardar() }
+            .setNeutralButton(R.string.quitar_nombre) { _, _ -> campo.setText(""); guardar() }
+            .setNegativeButton(R.string.cancelar, null)
+            .create()
+        campo.setOnEditorActionListener { _, _, _ -> guardar(); dialogo.dismiss(); true }
+        dialogo.setOnShowListener { campo.requestFocus() }
+        dialogo.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
+        dialogo.show()
     }
 
     /** Mientras el panel está abierto, el foco no se escapa al inicio de atrás. */
@@ -371,6 +409,7 @@ class MainActivity : Activity() {
         panelAbierto = false
         bloquearInicio(false)
         hoja.animate().translationX(80 * dp).setDuration(220).setInterpolator(suave).start()
+        barra.animate().alpha(1f).setDuration(260).setInterpolator(suave).start()
         panel.animate().alpha(0f).setDuration(220).setInterpolator(suave)
             .withEndAction { if (!panelAbierto) panel.visibility = View.GONE }.start()
         findViewById<View>(R.id.btn_hdmi).requestFocus()
