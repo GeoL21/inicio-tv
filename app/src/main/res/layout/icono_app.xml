@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="104dp"
+    android:layout_height="wrap_content"
+    android:focusable="true"
+    android:gravity="center_horizontal"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:id="@+id/marco"
+        android:layout_width="82dp"
+        android:layout_height="82dp"
+        android:background="@drawable/anillo"
+        android:duplicateParentState="true"
+        android:padding="5dp">
+
+        <ImageView
+            android:id="@+id/icono"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/nombre"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:shadowColor="#99000000"
+        android:shadowRadius="4"
+        android:textColor="@color/texto"
+        android:textSize="13sp" />
+</LinearLayout>

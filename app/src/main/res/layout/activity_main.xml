@@ -22,7 +22,7 @@
         android:layout_gravity="bottom"
         android:background="@drawable/velo_abajo" />
 
-    <!-- Reloj, fecha y saludo -->
+    <!-- Hora (12 horas), fecha y saludo -->
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -30,7 +30,6 @@
         android:layout_marginTop="40dp"
         android:orientation="vertical">
 
-        <!-- Hora siempre en formato de 12 horas, con a. m. / p. m. pequeño -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -107,41 +106,107 @@
             android:textColor="@color/texto"
             android:textSize="20sp" />
 
-        <ImageButton
-            android:id="@+id/btn_fondos"
-            style="@style/BotonRapido"
-            android:contentDescription="@string/fondos"
-            android:src="@drawable/ic_fondo" />
+        <ImageButton android:id="@+id/btn_fondos" style="@style/BotonRapido"
+            android:contentDescription="@string/fondos" android:src="@drawable/ic_fondo" />
 
-        <ImageButton
-            android:id="@+id/btn_red"
-            style="@style/BotonRapido"
-            android:contentDescription="@string/red"
-            android:src="@drawable/ic_red" />
+        <ImageButton android:id="@+id/btn_red" style="@style/BotonRapido"
+            android:contentDescription="@string/red" android:src="@drawable/ic_red" />
 
-        <ImageButton
-            android:id="@+id/btn_entradas"
-            style="@style/BotonRapido"
-            android:contentDescription="@string/entradas"
-            android:src="@drawable/ic_entradas" />
+        <ImageButton android:id="@+id/btn_entradas" style="@style/BotonRapido"
+            android:contentDescription="@string/entradas" android:src="@drawable/ic_tv" />
 
-        <ImageButton
-            android:id="@+id/btn_ajustes"
-            style="@style/BotonRapido"
-            android:contentDescription="@string/ajustes"
-            android:src="@drawable/ic_ajustes" />
+        <ImageButton android:id="@+id/btn_hdmi" style="@style/BotonRapido"
+            android:contentDescription="@string/hdmi" android:src="@drawable/ic_hdmi" />
+
+        <ImageButton android:id="@+id/btn_ajustes" style="@style/BotonRapido"
+            android:contentDescription="@string/ajustes" android:src="@drawable/ic_ajustes" />
     </LinearLayout>
 
-    <!-- Fila única de apps -->
-    <LinearLayout
-        android:id="@+id/fila"
-        android:layout_width="wrap_content"
+    <!-- Fila de apps fijadas: se desplaza hacia los lados -->
+    <HorizontalScrollView
+        android:id="@+id/desplazar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|start"
-        android:layout_marginStart="40dp"
-        android:layout_marginBottom="32dp"
-        android:padding="16dp"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="44dp"
         android:clipChildren="false"
         android:clipToPadding="false"
-        android:orientation="horizontal" />
+        android:fadingEdgeLength="40dp"
+        android:requiresFadingEdge="horizontal"
+        android:paddingStart="40dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="40dp"
+        android:paddingBottom="8dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/fila"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clipChildren="false"
+            android:orientation="horizontal" />
+    </HorizontalScrollView>
+
+    <!-- Pista: flecha abajo abre todas las apps (o cómo mover) -->
+    <TextView
+        android:id="@+id/pista"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="14dp"
+        android:drawableStart="@drawable/ic_flecha_abajo"
+        android:drawablePadding="6dp"
+        android:gravity="center_vertical"
+        android:text="@string/todas_las_apps"
+        android:textColor="@color/texto_suave"
+        android:textSize="14sp" />
+
+    <!-- Cajón con todas las apps: sube sobre el fondo -->
+    <FrameLayout
+        android:id="@+id/cajon"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#8C000000"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="18dp"
+            android:drawableStart="@drawable/ic_flecha_arriba"
+            android:drawablePadding="6dp"
+            android:gravity="center_vertical"
+            android:text="@string/inicio"
+            android:textColor="@color/texto_suave"
+            android:textSize="14sp" />
+
+        <GridView
+            android:id="@+id/cuadricula"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="52dp"
+            android:clipToPadding="false"
+            android:columnWidth="104dp"
+            android:gravity="center"
+            android:horizontalSpacing="8dp"
+            android:listSelector="@android:color/transparent"
+            android:numColumns="auto_fit"
+            android:paddingStart="56dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="56dp"
+            android:paddingBottom="48dp"
+            android:scrollbars="none"
+            android:stretchMode="spacingWidthUniform"
+            android:verticalSpacing="20dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="14dp"
+            android:text="@string/ayuda_apps"
+            android:textColor="@color/texto_suave"
+            android:textSize="13sp" />
+    </FrameLayout>
 </FrameLayout>

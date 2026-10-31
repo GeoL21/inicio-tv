@@ -5,9 +5,12 @@ Hecha desde cero por GeoL, con ayuda de Claude.
 
 - Reloj grande, fecha y saludo (buenos días / tardes / noches)
 - Clima de Barranquilla (Open-Meteo, sin cuenta ni clave)
-- Accesos rápidos: red, entrada de TV (solo si el equipo la tiene) y ajustes
-- Una sola fila de apps: Netflix, Play Store y **Todas las apps**
-- En **Todas las apps**: OK abre, mantener OK fija o quita la app del inicio
+- Accesos rápidos: fondos, red, TV por cable, entradas HDMI (estas dos solo si el equipo las tiene) y ajustes
+- Iconos redondos al estilo del launcher de Google Pixel, en alta resolución
+- Fila de apps fijadas que se desplaza hacia los lados
+- **Flecha abajo** abre todas las apps; flecha arriba o Atrás para volver.
+  Ahí, mantener OK fija o quita una app del inicio
+- Para ordenar la fila: mantén OK sobre una app, muévela con ← → y pulsa OK
 - Selector de fondos estáticos (5 incluidos + los tuyos), sin videos ni animaciones pesadas
 - Fuente Inter, o tu propia fuente si la copias a la TV
 - Sin librerías externas: el APK pesa poco y gasta poca memoria

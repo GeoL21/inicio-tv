@@ -3,13 +3,17 @@
     <string name="app_name">Inicio</string>
     <string name="todas_las_apps">Todas las apps</string>
     <string name="red">Red</string>
-    <string name="entradas">Entradas de TV</string>
+    <string name="hdmi">Entradas HDMI</string>
+    <string name="sin_hdmi">Este equipo no tiene entradas HDMI</string>
+    <string name="inicio">Inicio</string>
+    <string name="pista_mover">← → para mover · OK para terminar</string>
+    <string name="entradas">TV por cable</string>
     <string name="ajustes">Ajustes</string>
     <string name="fijada">Fijada en inicio</string>
     <string name="quitada">Quitada del inicio</string>
     <string name="sin_entradas">Este equipo no tiene entrada de TV</string>
     <string name="no_abre">No se pudo abrir</string>
-    <string name="ayuda_apps">OK para abrir · mantén OK para fijar o quitar del inicio</string>
+    <string name="ayuda_apps">Mantén OK para fijar o quitar del inicio</string>
     <string name="fondos">Fondos</string>
     <string name="ayuda_fondos">OK para usar · el actual tiene marca</string>
 </resources>

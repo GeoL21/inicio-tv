@@ -2,10 +2,10 @@ package com.geol.inicio
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.Drawable
+import android.content.pm.ActivityInfo
 
 /** Una app que se puede abrir desde el inicio. */
-data class App(val paquete: String, val nombre: String, val icono: Drawable)
+data class App(val paquete: String, val nombre: String, val info: ActivityInfo)
 
 object Apps {
     private const val PREFS = "inicio"
@@ -20,10 +20,10 @@ object Apps {
         val vistas = LinkedHashMap<String, App>()
         for (categoria in listOf(Intent.CATEGORY_LEANBACK_LAUNCHER, Intent.CATEGORY_LAUNCHER)) {
             val intent = Intent(Intent.ACTION_MAIN).addCategory(categoria)
-            for (info in pm.queryIntentActivities(intent, 0)) {
-                val paquete = info.activityInfo.packageName
+            for (r in pm.queryIntentActivities(intent, 0)) {
+                val paquete = r.activityInfo.packageName
                 if (paquete == ctx.packageName || vistas.containsKey(paquete)) continue
-                vistas[paquete] = App(paquete, info.loadLabel(pm).toString(), info.loadIcon(pm))
+                vistas[paquete] = App(paquete, r.loadLabel(pm).toString(), r.activityInfo)
             }
         }
         return vistas.values.sortedBy { it.nombre.lowercase() }
@@ -35,12 +35,16 @@ object Apps {
         return guardadas.split(",").filter { it.isNotBlank() }
     }
 
+    fun guardarFijadas(ctx: Context, lista: List<String>) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(CLAVE_FIJADAS, lista.joinToString(",")).apply()
+    }
+
     /** Fija o quita una app del inicio. Devuelve true si quedó fijada. */
     fun alternarFijada(ctx: Context, paquete: String): Boolean {
         val lista = fijadas(ctx).toMutableList()
         val fijada = if (lista.remove(paquete)) false else { lista.add(paquete); true }
-        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString(CLAVE_FIJADAS, lista.joinToString(",")).apply()
+        guardarFijadas(ctx, lista)
         return fijada
     }
 
