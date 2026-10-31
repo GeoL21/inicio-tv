@@ -215,21 +215,39 @@ class MainActivity : Activity() {
 
     // ---------- Cajón con todas las apps ----------
 
+    /** Lo que forma el inicio: se desvanece cuando suben las apps. */
+    private val portada by lazy {
+        listOf(R.id.bloque_reloj, R.id.barra, R.id.desplazar, R.id.pista).map { findViewById<View>(it) }
+    }
+    private val suave = android.view.animation.DecelerateInterpolator(2f)
+    private val dp by lazy { resources.displayMetrics.density }
+
     private fun abrirCajon() {
         cajonAbierto = true
+        for (v in portada) {
+            v.animate().cancel()
+            v.animate().alpha(0f).translationY(-24 * dp).setDuration(220).setInterpolator(suave)
+                .withEndAction { if (cajonAbierto) v.visibility = View.INVISIBLE }.start()
+        }
+        cajon.animate().cancel()
+        cajon.alpha = 0f
+        cajon.translationY = 56 * dp
         cajon.visibility = View.VISIBLE
-        cajon.translationY = cajon.height.toFloat().takeIf { it > 0 } ?: 600f
-        cajon.animate().translationY(0f).setDuration(220).start()
-        pista.visibility = View.INVISIBLE
-        cuadricula.requestFocus()
+        cajon.animate().alpha(1f).translationY(0f).setDuration(320).setInterpolator(suave).start()
         cuadricula.setSelection(0)
+        cuadricula.requestFocus()
     }
 
     private fun cerrarCajon() {
         cajonAbierto = false
-        cajon.animate().translationY(cajon.height.toFloat()).setDuration(200)
-            .withEndAction { cajon.visibility = View.GONE }.start()
-        pista.visibility = View.VISIBLE
+        cajon.animate().cancel()
+        cajon.animate().alpha(0f).translationY(56 * dp).setDuration(240).setInterpolator(suave)
+            .withEndAction { if (!cajonAbierto) cajon.visibility = View.GONE }.start()
+        for (v in portada) {
+            v.animate().cancel()
+            v.visibility = View.VISIBLE
+            v.animate().alpha(1f).translationY(0f).setDuration(300).setInterpolator(suave).start()
+        }
         fila.getChildAt(0)?.requestFocus()
     }
 

@@ -24,6 +24,7 @@
 
     <!-- Hora (12 horas), fecha y saludo -->
     <LinearLayout
+        android:id="@+id/bloque_reloj"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="56dp"
@@ -81,6 +82,7 @@
 
     <!-- Clima y accesos rápidos -->
     <LinearLayout
+        android:id="@+id/barra"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end"
@@ -166,7 +168,7 @@
         android:id="@+id/cajon"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#8C000000"
+        android:background="#73000000"
         android:visibility="gone">
 
         <TextView

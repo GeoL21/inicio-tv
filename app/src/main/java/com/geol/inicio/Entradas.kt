@@ -9,14 +9,18 @@ import android.media.tv.TvInputManager
 /** Entradas de la TV: cable/antena y HDMI. En la TV box no hay ninguna. */
 object Entradas {
 
-    /** App de TV en vivo (antena/cable) del equipo, si la tiene. */
-    fun paqueteTv(ctx: Context): String? = listOf(
-        "com.mediatek.wwtv.tvcenter", // Hisense y otras TV con MediaTek
-        "com.android.tv",             // TV en vivo de Android
-        "com.google.android.tv"       // Canales en vivo de Google
-    ).firstOrNull { p ->
-        ctx.packageManager.getLeanbackLaunchIntentForPackage(p) != null ||
-            ctx.packageManager.getLaunchIntentForPackage(p) != null
+    /**
+     * App de TV en vivo (antena/cable) del equipo, si la tiene. Primero las conocidas;
+     * si no, la que abre entradas de TV (así se encuentra "Live TV" de cualquier marca).
+     */
+    fun paqueteTv(ctx: Context): String? {
+        val pm = ctx.packageManager
+        val abrible = { p: String -> pm.getLeanbackLaunchIntentForPackage(p) != null || pm.getLaunchIntentForPackage(p) != null }
+        listOf("com.mediatek.wwtv.tvcenter", "com.android.tv", "com.google.android.tv")
+            .firstOrNull(abrible)?.let { return it }
+        val ver = Intent(Intent.ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput("prueba"))
+        return pm.queryIntentActivities(ver, 0).map { it.activityInfo.packageName }
+            .firstOrNull { it != "android" && abrible(it) }
     }
 
     /**
