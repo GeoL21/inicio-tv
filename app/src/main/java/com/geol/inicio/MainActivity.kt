@@ -48,9 +48,6 @@ class MainActivity : Activity() {
         climaIcono = findViewById(R.id.clima_icono)
         fila = findViewById(R.id.fila)
 
-        val fondo = findViewById<ImageView>(R.id.fondo)
-        Apps.fondo(this)?.let { fondo.setImageBitmap(it) } ?: fondo.setImageResource(R.drawable.fondo)
-
         findViewById<ImageButton>(R.id.btn_red).setOnClickListener {
             abrirAjuste(Settings.ACTION_WIFI_SETTINGS, Settings.ACTION_WIRELESS_SETTINGS)
         }
@@ -67,6 +64,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        revisarFondo()
         armarFila()
         manejador.removeCallbacks(cadaMinuto)
         manejador.post(cadaMinuto)
@@ -80,6 +78,16 @@ class MainActivity : Activity() {
     // Es la pantalla de inicio: el botón Atrás no hace nada aquí.
     @Deprecated("Se mantiene para Android TV")
     override fun onBackPressed() {}
+
+    /** Vuelve a cargar el fondo solo si fondo.jpg cambió, se agregó o se borró. */
+    private var fechaFondo = -1L
+    private fun revisarFondo() {
+        val fecha = Apps.fechaFondo(this)
+        if (fecha == fechaFondo) return
+        fechaFondo = fecha
+        val fondo = findViewById<ImageView>(R.id.fondo)
+        Apps.fondo(this)?.let { fondo.setImageBitmap(it) } ?: fondo.setImageResource(R.drawable.fondo)
+    }
 
     private fun armarFila() {
         fila.removeAllViews()

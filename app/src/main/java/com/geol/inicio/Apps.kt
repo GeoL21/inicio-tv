@@ -61,8 +61,13 @@ object Apps {
      * (/sdcard/Android/data/com.geol.inicio/files/fondo.jpg), se usa ese;
      * si no, el que trae la app.
      */
+    private fun archivoFondo(ctx: Context) = ctx.getExternalFilesDir(null)?.let { File(it, "fondo.jpg") }
+
+    /** Fecha de modificación de fondo.jpg, o 0 si no existe. */
+    fun fechaFondo(ctx: Context): Long = archivoFondo(ctx)?.takeIf { it.exists() }?.lastModified() ?: 0L
+
     fun fondo(ctx: Context): Bitmap? {
-        val propio = ctx.getExternalFilesDir(null)?.let { File(it, "fondo.jpg") }
+        val propio = archivoFondo(ctx)
         if (propio == null || !propio.exists()) return null
         val medidas = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(propio.path, medidas)

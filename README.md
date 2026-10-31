@@ -56,7 +56,11 @@ Usa una imagen JPG horizontal (1920×1080 es suficiente):
 adb -s 192.168.1.49:5555 push mi-foto.jpg /sdcard/Android/data/com.geol.inicio/files/fondo.jpg
 ```
 
-Sal al inicio y vuelve a entrar para verla. Si borras el archivo, vuelve el fondo original.
+Se ve apenas vuelves al inicio (botón Home). Si borras el archivo, vuelve el fondo original:
+
+```
+adb -s 192.168.1.49:5555 shell rm /sdcard/Android/data/com.geol.inicio/files/fondo.jpg
+```
 
 ## Créditos
 
