@@ -19,7 +19,8 @@ class AppsActivity : Activity() {
         setContentView(R.layout.activity_apps)
 
         val fondo = findViewById<ImageView>(R.id.fondo)
-        Apps.fondo(this)?.let { fondo.setImageBitmap(it) } ?: fondo.setImageResource(R.drawable.fondo)
+        Fondos.cargar(this, Fondos.actual(this), 1920)?.let { fondo.setImageBitmap(it) }
+            ?: fondo.setImageResource(R.drawable.fondo)
 
         val apps = Apps.todas(this)
         val cuadricula = findViewById<GridView>(R.id.cuadricula)
@@ -35,6 +36,7 @@ class AppsActivity : Activity() {
             true
         }
         cuadricula.requestFocus()
+        Fuente.aplicar(window.decorView)
     }
 
     private inner class Adaptador(private val apps: List<App>) : BaseAdapter() {
@@ -48,6 +50,7 @@ class AppsActivity : Activity() {
                     // En una cuadrícula el foco lo maneja la cuadrícula, no cada mosaico
                     isFocusable = false
                     isClickable = false
+                    Fuente.aplicar(this)
                 }
             val app = apps[pos]
             vista.findViewById<ImageView>(R.id.icono).setImageDrawable(app.icono)

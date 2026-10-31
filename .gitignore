@@ -6,3 +6,8 @@ local.properties
 *.iml
 *.apk
 debloat/registro-*.txt*
+
+# Fuentes personales: nunca al repo (solo las de res/font)
+*.otf
+/*.ttf
+fuente.*

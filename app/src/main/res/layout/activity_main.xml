@@ -108,6 +108,12 @@
             android:textSize="20sp" />
 
         <ImageButton
+            android:id="@+id/btn_fondos"
+            style="@style/BotonRapido"
+            android:contentDescription="@string/fondos"
+            android:src="@drawable/ic_fondo" />
+
+        <ImageButton
             android:id="@+id/btn_red"
             style="@style/BotonRapido"
             android:contentDescription="@string/red"

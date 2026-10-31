@@ -11,8 +11,8 @@ android {
         applicationId = "com.geol.inicio"
         minSdk = 28
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
     }
 
     // Firma fija (firma.jks + secreto FIRMA_CLAVE en GitHub): todas las versiones

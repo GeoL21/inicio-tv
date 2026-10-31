@@ -10,4 +10,6 @@
     <string name="sin_entradas">Este equipo no tiene entrada de TV</string>
     <string name="no_abre">No se pudo abrir</string>
     <string name="ayuda_apps">OK para abrir · mantén OK para fijar o quitar del inicio</string>
+    <string name="fondos">Fondos</string>
+    <string name="ayuda_fondos">OK para usar · el actual tiene marca</string>
 </resources>

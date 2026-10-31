@@ -8,7 +8,8 @@ Hecha desde cero por GeoL, con ayuda de Claude.
 - Accesos rápidos: red, entrada de TV (solo si el equipo la tiene) y ajustes
 - Una sola fila de apps: Netflix, Play Store y **Todas las apps**
 - En **Todas las apps**: OK abre, mantener OK fija o quita la app del inicio
-- Fondo estático, fuente Inter, sin videos ni animaciones pesadas
+- Selector de fondos estáticos (5 incluidos + los tuyos), sin videos ni animaciones pesadas
+- Fuente Inter, o tu propia fuente si la copias a la TV
 - Sin librerías externas: el APK pesa poco y gasta poca memoria
 
 ## 1. Obtener el APK
@@ -48,19 +49,32 @@ Todo queda anotado en `debloat/registro-hisense.txt`.
 bash debloat/deshacer.sh 192.168.1.49
 ```
 
-## Cambiar el fondo
+## Fondos de pantalla
 
-Usa una imagen JPG horizontal (1920×1080 es suficiente):
+El botón de imagen (arriba, junto a red) abre **Fondos**: miniaturas de los 5 fondos
+incluidos y de los tuyos. OK aplica el fondo al instante; el actual tiene una marca.
 
-```
-adb -s 192.168.1.49:5555 push mi-foto.jpg /sdcard/Android/data/com.geol.inicio/files/fondo.jpg
-```
-
-Se ve apenas vuelves al inicio (botón Home). Si borras el archivo, vuelve el fondo original:
+Para agregar fotos propias (JPG, PNG o WEBP; 1920×1080 es suficiente):
 
 ```
-adb -s 192.168.1.49:5555 shell rm /sdcard/Android/data/com.geol.inicio/files/fondo.jpg
+adb -s 192.168.1.49:5555 shell mkdir -p /sdcard/Android/data/com.geol.inicio/files/fondos
+adb -s 192.168.1.49:5555 push playa.jpg /sdcard/Android/data/com.geol.inicio/files/fondos/
 ```
+
+El nombre del archivo es el que se ve en la miniatura. Para quitar una:
+`adb -s 192.168.1.49:5555 shell rm /sdcard/Android/data/com.geol.inicio/files/fondos/playa.jpg`
+
+## Fuente personal (opcional)
+
+La app usa Inter. Si copias tu propia fuente con el nombre `fuente.otf` (o `fuente.ttf`)
+a la carpeta de la app, se usa esa. El archivo queda solo en tu TV: no va dentro del APK
+ni en este repositorio.
+
+```
+adb -s 192.168.1.49:5555 push mi-fuente.otf /sdcard/Android/data/com.geol.inicio/files/fuente.otf
+```
+
+Se aplica al volver al inicio. Para volver a Inter, borra el archivo con `adb shell rm`.
 
 ## Créditos
 

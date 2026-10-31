@@ -48,6 +48,9 @@ class MainActivity : Activity() {
         climaIcono = findViewById(R.id.clima_icono)
         fila = findViewById(R.id.fila)
 
+        findViewById<ImageButton>(R.id.btn_fondos).setOnClickListener {
+            startActivity(Intent(this, FondosActivity::class.java))
+        }
         findViewById<ImageButton>(R.id.btn_red).setOnClickListener {
             abrirAjuste(Settings.ACTION_WIFI_SETTINGS, Settings.ACTION_WIRELESS_SETTINGS)
         }
@@ -66,6 +69,7 @@ class MainActivity : Activity() {
         super.onResume()
         revisarFondo()
         armarFila()
+        Fuente.aplicar(window.decorView)
         manejador.removeCallbacks(cadaMinuto)
         manejador.post(cadaMinuto)
     }
@@ -79,14 +83,15 @@ class MainActivity : Activity() {
     @Deprecated("Se mantiene para Android TV")
     override fun onBackPressed() {}
 
-    /** Vuelve a cargar el fondo solo si fondo.jpg cambió, se agregó o se borró. */
-    private var fechaFondo = -1L
+    /** Vuelve a cargar el fondo solo si se eligió otro o cambió el archivo. */
+    private var firmaFondo = ""
     private fun revisarFondo() {
-        val fecha = Apps.fechaFondo(this)
-        if (fecha == fechaFondo) return
-        fechaFondo = fecha
+        val firma = Fondos.firma(this)
+        if (firma == firmaFondo) return
+        firmaFondo = firma
         val fondo = findViewById<ImageView>(R.id.fondo)
-        Apps.fondo(this)?.let { fondo.setImageBitmap(it) } ?: fondo.setImageResource(R.drawable.fondo)
+        val bmp = Fondos.cargar(this, Fondos.actual(this), 1920)
+        if (bmp != null) fondo.setImageBitmap(bmp) else fondo.setImageResource(R.drawable.fondo)
     }
 
     private fun armarFila() {

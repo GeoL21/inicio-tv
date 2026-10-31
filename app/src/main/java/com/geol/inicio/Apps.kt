@@ -2,10 +2,7 @@ package com.geol.inicio
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
-import java.io.File
 
 /** Una app que se puede abrir desde el inicio. */
 data class App(val paquete: String, val nombre: String, val icono: Drawable)
@@ -54,28 +51,5 @@ object Apps {
         return try {
             ctx.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); true
         } catch (e: Exception) { false }
-    }
-
-    /**
-     * Fondo estático. Si existe el archivo fondo.jpg en la carpeta de la app
-     * (/sdcard/Android/data/com.geol.inicio/files/fondo.jpg), se usa ese;
-     * si no, el que trae la app.
-     */
-    private fun archivoFondo(ctx: Context) = ctx.getExternalFilesDir(null)?.let { File(it, "fondo.jpg") }
-
-    /** Fecha de modificación de fondo.jpg, o 0 si no existe. */
-    fun fechaFondo(ctx: Context): Long = archivoFondo(ctx)?.takeIf { it.exists() }?.lastModified() ?: 0L
-
-    fun fondo(ctx: Context): Bitmap? {
-        val propio = archivoFondo(ctx)
-        if (propio == null || !propio.exists()) return null
-        val medidas = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(propio.path, medidas)
-        var escala = 1
-        while (medidas.outWidth / (escala * 2) >= 1920) escala *= 2
-        return BitmapFactory.decodeFile(propio.path, BitmapFactory.Options().apply {
-            inSampleSize = escala
-            inPreferredConfig = Bitmap.Config.RGB_565 // usa la mitad de memoria
-        })
     }
 }
