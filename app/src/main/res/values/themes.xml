@@ -5,7 +5,7 @@
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:windowAnimationStyle">@null</item>
-        <item name="android:fontFamily">@font/inter</item>
+        <item name="android:fontFamily">@font/google_sans</item>
         <item name="android:textColor">@color/texto</item>
     </style>
 </resources>

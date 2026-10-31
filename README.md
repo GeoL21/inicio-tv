@@ -7,12 +7,14 @@ Hecha desde cero por GeoL, con ayuda de Claude.
 - Clima de Barranquilla (Open-Meteo, sin cuenta ni clave)
 - Accesos rápidos: fondos, red, TV por cable, entradas HDMI (estas dos solo si el equipo las tiene) y ajustes
 - Iconos redondos al estilo del launcher de Google Pixel, en alta resolución
-- Fila de apps fijadas que se desplaza hacia los lados, con acceso directo a **Canales TV** (cable)
+- Dock centrado de hasta **8 apps**: los iconos se achican solos a medida que agregas apps.
+  Los nombres largos se cortan por palabras ("Xuper Crystal Clear" → "Xuper")
+- Acceso directo **Canales TV** (entra directo al cable) y panel de entradas HDMI con las conectadas
 - **Flecha abajo** abre todas las apps; flecha arriba o Atrás para volver.
   Ahí, mantener OK fija o quita una app del inicio
 - Para ordenar la fila: mantén OK sobre una app, muévela con ← → y pulsa OK
 - Selector de fondos estáticos (5 incluidos + los tuyos), sin videos ni animaciones pesadas
-- Fuente Inter, o tu propia fuente si la copias a la TV
+- Fuente Google Sans Flex (licencia OFL, incluida)
 - Sin librerías externas: el APK pesa poco y gasta poca memoria
 
 ## 1. Obtener el APK
@@ -67,26 +69,21 @@ adb -s 192.168.1.49:5555 push playa.jpg /sdcard/Android/data/com.geol.inicio/fil
 El nombre del archivo es el que se ve en la miniatura. Para quitar una:
 `adb -s 192.168.1.49:5555 shell rm /sdcard/Android/data/com.geol.inicio/files/fondos/playa.jpg`
 
-## Fuente personal (opcional)
+## Iconos propios (opcional)
 
-La app usa Inter. Puedes usar tu propia fuente copiando hasta dos archivos a la
-carpeta de la app (también sirven con `.ttf`):
-
-- `fuente.otf`: textos normales (fecha, clima, ayudas)
-- `fuente-medium.otf`: reloj, saludo y nombres de apps
-
-Si solo copias `fuente.otf`, los textos medios se engrosan solos. Los archivos quedan
-solo en tu TV: no van dentro del APK ni en este repositorio.
+Si el icono de una app no te gusta, copia un PNG cuadrado (512×512 es ideal) con el
+nombre del paquete de la app. Llena todo el círculo:
 
 ```
-adb -s 192.168.1.49:5555 push Regular.otf /sdcard/Android/data/com.geol.inicio/files/fuente.otf
-adb -s 192.168.1.49:5555 push Medium.otf  /sdcard/Android/data/com.geol.inicio/files/fuente-medium.otf
+adb -s 192.168.1.49:5555 shell mkdir -p /sdcard/Android/data/com.geol.inicio/files/iconos
+adb -s 192.168.1.49:5555 push youtube.png /sdcard/Android/data/com.geol.inicio/files/iconos/com.google.android.youtube.tv.png
 ```
 
-Se aplica al volver al inicio. Para volver a Inter, borra los archivos con `adb shell rm`.
+Para ver el nombre del paquete de tus apps: `adb -s 192.168.1.49:5555 shell pm list packages -3`.
+Se aplica al volver al inicio. Para quitarlo, borra el archivo.
 
 ## Créditos
 
 - Lista de paquetes seguros: catálogo de la comunidad [dumbtv](https://github.com/humblemuzzu/dumbtv).
-- Fuente [Inter](https://rsms.me/inter/) de Rasmus Andersson (licencia OFL, ver `LICENCIA-FUENTE-INTER.txt`).
+- Fuente [Google Sans Flex](https://github.com/googlefonts/googlesans-flex) (licencia OFL, ver `LICENCIA-FUENTE-GOOGLE-SANS-FLEX.txt`).
 - Clima: [Open-Meteo](https://open-meteo.com).

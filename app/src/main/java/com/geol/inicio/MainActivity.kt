@@ -12,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.GridView
-import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -34,7 +33,6 @@ class MainActivity : Activity() {
     private lateinit var clima: TextView
     private lateinit var climaIcono: ImageView
     private lateinit var fila: LinearLayout
-    private lateinit var desplazar: HorizontalScrollView
     private lateinit var pista: TextView
     private lateinit var cajon: View
     private lateinit var cuadricula: GridView
@@ -46,7 +44,6 @@ class MainActivity : Activity() {
     private var moviendo: View? = null
     private var ignorarSoltarOk = false
 
-    private val tamFila by lazy { (72 * resources.displayMetrics.density).toInt() }
 
     /** Actualiza fecha y saludo cada minuto (el reloj se actualiza solo). */
     private val cadaMinuto = object : Runnable {
@@ -65,7 +62,6 @@ class MainActivity : Activity() {
         clima = findViewById(R.id.clima)
         climaIcono = findViewById(R.id.clima_icono)
         fila = findViewById(R.id.fila)
-        desplazar = findViewById(R.id.desplazar)
         pista = findViewById(R.id.pista)
         cajon = findViewById(R.id.cajon)
         cuadricula = findViewById(R.id.cuadricula)
@@ -94,9 +90,13 @@ class MainActivity : Activity() {
             if (!Apps.abrir(this, todas[pos].paquete)) aviso(R.string.no_abre)
         }
         cuadricula.setOnItemLongClickListener { _, _, pos, _ ->
-            val fijada = Apps.alternarFijada(this, todas[pos].paquete)
-            aviso(if (fijada) R.string.fijada else R.string.quitada)
-            armarFila(enfocar = false)
+            val r = Apps.alternarFijada(this, todas[pos].paquete, todas.map { it.paquete }.toSet())
+            aviso(when (r) {
+                Apps.Resultado.FIJADA -> R.string.fijada
+                Apps.Resultado.QUITADA -> R.string.quitada
+                Apps.Resultado.LLENO -> R.string.dock_lleno
+            })
+            if (r != Apps.Resultado.LLENO) armarFila(enfocar = false)
             true
         }
     }
@@ -156,31 +156,71 @@ class MainActivity : Activity() {
 
     // ---------- Fila de apps fijadas ----------
 
+    /** Tamaño del icono según cuántas apps hay: grandes hasta 4, luego se achican hasta 8. */
+    private fun tamanoIconoDp(n: Int) = when {
+        n <= 4 -> 80; n == 5 -> 72; n == 6 -> 66; n == 7 -> 60; else -> 56
+    }
+
     private fun armarFila(enfocar: Boolean) {
         val porPaquete = todas.associateBy { it.paquete }
         val enfocado = (currentFocus?.tag as? String)
         fila.removeAllViews()
+        val apps = Apps.fijadas(this).mapNotNull { porPaquete[it] }.take(Apps.MAXIMO)
+        val n = apps.size
+        val dock = findViewById<View>(R.id.dock)
+        dock.visibility = if (n == 0) View.GONE else View.VISIBLE
+
+        val iconoDp = tamanoIconoDp(n)
+        val anchoDp = iconoDp + 34                       // espacio entre iconos proporcional
+        val px = { v: Int -> (v * dp).toInt() }
+        dock.setPadding(px(iconoDp / 5), px(14), px(iconoDp / 5), px(10))
         val inflador = LayoutInflater.from(this)
-        for (paquete in Apps.fijadas(this)) {
-            val app = porPaquete[paquete] ?: continue
+        for (app in apps) {
             val vista = inflador.inflate(R.layout.icono_app, fila, false)
             vista.tag = app.paquete
-            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this, app, tamFila))
-            vista.findViewById<TextView>(R.id.nombre).text = app.nombre
+            vista.layoutParams.width = px(anchoDp)
+            vista.findViewById<View>(R.id.marco).layoutParams.apply {
+                width = px(iconoDp + 10); height = px(iconoDp + 10)
+            }
+            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this, app, px(iconoDp)))
+            val etiqueta = vista.findViewById<TextView>(R.id.nombre)
+            etiqueta.textSize = if (n <= 6) 13f else 12f
             vista.setOnClickListener { if (!Apps.abrir(this, app.paquete)) aviso(R.string.no_abre) }
             vista.setOnLongClickListener { empezarMover(it); true }
             vista.setOnFocusChangeListener { v, foco ->
                 val escala = if (foco) 1.1f else 1f
-                v.animate().scaleX(escala).scaleY(escala).setDuration(120).start()
+                v.animate().scaleX(escala).scaleY(escala).setDuration(140).setInterpolator(suave).start()
             }
             fila.addView(vista)
+            Fuente.aplicar(vista)
+            etiqueta.text = cortarPorPalabras(app.nombre, etiqueta, px(anchoDp - 8).toFloat())
         }
-        Fuente.aplicar(fila)
         if (enfocar) {
             val destino = (0 until fila.childCount).map { fila.getChildAt(it) }
                 .firstOrNull { it.tag == enfocado } ?: fila.getChildAt(0)
             destino?.requestFocus()
         }
+    }
+
+    /**
+     * Nombre cortado por palabras completas, sin "…":
+     * "Xuper Crystal Clear" → "Xuper"; si el nombre cabe entero, se deja igual.
+     */
+    private fun cortarPorPalabras(nombre: String, vista: TextView, ancho: Float): String {
+        val pintura = vista.paint
+        if (pintura.measureText(nombre) <= ancho) return nombre
+        val palabras = nombre.split(" ").filter { it.isNotBlank() }
+        var texto = palabras.firstOrNull() ?: return nombre
+        for (p in palabras.drop(1)) {
+            val probar = "$texto $p"
+            if (pintura.measureText(probar) > ancho) break
+            texto = probar
+        }
+        // Si una sola palabra no cabe (p. ej. "Downloader"), se achica un poco la letra
+        while (pintura.measureText(texto) > ancho && vista.textSize > 10 * dp) {
+            vista.setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, vista.textSize - dp)
+        }
+        return texto
     }
 
     private fun empezarMover(v: View) {
@@ -198,7 +238,6 @@ class MainActivity : Activity() {
         fila.removeViewAt(desde)
         fila.addView(v, hasta)
         v.requestFocus()
-        desplazar.post { desplazar.requestChildFocus(fila, v) }
     }
 
     private fun terminarMover() {
@@ -216,7 +255,7 @@ class MainActivity : Activity() {
 
     /** Lo que forma el inicio: se desvanece cuando suben las apps. */
     private val portada by lazy {
-        listOf(R.id.bloque_reloj, R.id.barra, R.id.desplazar, R.id.pista).map { findViewById<View>(it) }
+        listOf(R.id.bloque_reloj, R.id.barra, R.id.dock, R.id.pista).map { findViewById<View>(it) }
     }
     private val suave = android.view.animation.DecelerateInterpolator(2f)
     private val dp by lazy { resources.displayMetrics.density }
@@ -271,7 +310,9 @@ class MainActivity : Activity() {
                 }
             val app = todas[pos]
             vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this@MainActivity, app, tam))
-            vista.findViewById<TextView>(R.id.nombre).text = app.nombre
+            val etiqueta = vista.findViewById<TextView>(R.id.nombre)
+            etiqueta.textSize = 12f
+            etiqueta.text = cortarPorPalabras(app.nombre, etiqueta, 96 * dp)
             return vista
         }
     }
@@ -401,7 +442,7 @@ class MainActivity : Activity() {
     /** Mientras el panel está abierto, el foco no se escapa al inicio de atrás. */
     private fun bloquearInicio(bloquear: Boolean) {
         val modo = if (bloquear) ViewGroup.FOCUS_BLOCK_DESCENDANTS else ViewGroup.FOCUS_AFTER_DESCENDANTS
-        listOf(R.id.barra, R.id.desplazar).forEach { findViewById<ViewGroup>(it).descendantFocusability = modo }
+        listOf(R.id.barra, R.id.dock).forEach { findViewById<ViewGroup>(it).descendantFocusability = modo }
     }
 
     private fun cerrarPanelEntradas() {

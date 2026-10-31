@@ -41,6 +41,7 @@
                 android:id="@+id/reloj"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="@font/google_sans_reloj"
                 android:format12Hour="h:mm"
                 android:format24Hour="h:mm"
                 android:fontFeatureSettings="tnum"
@@ -124,30 +125,25 @@
             android:contentDescription="@string/ajustes" android:src="@drawable/ic_ajustes" />
     </LinearLayout>
 
-    <!-- Fila de apps fijadas: se desplaza hacia los lados -->
-    <HorizontalScrollView
-        android:id="@+id/desplazar"
-        android:layout_width="match_parent"
+    <!-- Dock: centrado, se ajusta al número de apps (máximo 8) -->
+    <FrameLayout
+        android:id="@+id/dock"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:layout_marginBottom="44dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="46dp"
+        android:background="@drawable/fondo_dock"
         android:clipChildren="false"
-        android:clipToPadding="false"
-        android:fadingEdgeLength="40dp"
-        android:requiresFadingEdge="horizontal"
-        android:paddingStart="40dp"
-        android:paddingTop="14dp"
-        android:paddingEnd="40dp"
-        android:paddingBottom="8dp"
-        android:scrollbars="none">
+        android:clipToPadding="false">
 
         <LinearLayout
             android:id="@+id/fila"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:clipChildren="false"
+            android:gravity="center_vertical"
             android:orientation="horizontal" />
-    </HorizontalScrollView>
+    </FrameLayout>
 
     <!-- Pista: flecha abajo abre todas las apps (o cómo mover) -->
     <TextView

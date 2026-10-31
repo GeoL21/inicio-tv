@@ -25,4 +25,5 @@
     <string name="guardar">Guardar</string>
     <string name="quitar_nombre">Quitar nombre</string>
     <string name="cancelar">Cancelar</string>
+    <string name="dock_lleno">Ya tienes 8 apps en el inicio. Quita una para agregar otra</string>
 </resources>

@@ -12,6 +12,9 @@ object Apps {
     private const val CLAVE_FIJADAS = "fijadas"
     private const val CLAVE_CABLE_AGREGADO = "canales_tv_agregado"
 
+    /** Máximo de apps en el dock del inicio. */
+    const val MAXIMO = 8
+
     /** Acceso directo propio a los canales por cable (solo en equipos con entrada de TV). */
     const val CANALES_TV = "interno:canales_tv"
 
@@ -58,12 +61,19 @@ object Apps {
             .putBoolean(CLAVE_CABLE_AGREGADO, true).apply()
     }
 
-    /** Fija o quita una app del inicio. Devuelve true si quedó fijada. */
-    fun alternarFijada(ctx: Context, paquete: String): Boolean {
+    enum class Resultado { FIJADA, QUITADA, LLENO }
+
+    /**
+     * Fija o quita una app del inicio. Si ya hay [MAXIMO] apps instaladas en el dock,
+     * no deja agregar otra. `instaladas` son los paquetes que hoy se pueden abrir.
+     */
+    fun alternarFijada(ctx: Context, paquete: String, instaladas: Set<String>): Resultado {
         val lista = fijadas(ctx).toMutableList()
-        val fijada = if (lista.remove(paquete)) false else { lista.add(paquete); true }
+        if (lista.remove(paquete)) { guardarFijadas(ctx, lista); return Resultado.QUITADA }
+        if (lista.count { it in instaladas } >= MAXIMO) return Resultado.LLENO
+        lista.add(paquete)
         guardarFijadas(ctx, lista)
-        return fijada
+        return Resultado.FIJADA
     }
 
     fun abrir(ctx: Context, paquete: String): Boolean {
