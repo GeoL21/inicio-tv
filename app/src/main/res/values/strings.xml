@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Inicio</string>
+    <string name="todas_las_apps">Todas las apps</string>
+    <string name="red">Red</string>
+    <string name="entradas">Entradas de TV</string>
+    <string name="ajustes">Ajustes</string>
+    <string name="fijada">Fijada en inicio</string>
+    <string name="quitada">Quitada del inicio</string>
+    <string name="sin_entradas">Este equipo no tiene entrada de TV</string>
+    <string name="no_abre">No se pudo abrir</string>
+    <string name="ayuda_apps">OK para abrir · mantén OK para fijar o quitar del inicio</string>
+</resources>

@@ -1,0 +1,44 @@
+name: Crear APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # La firma vive en los secretos del repo (FIRMA_JKS en base64 y FIRMA_CLAVE),
+      # así todas las versiones se pueden instalar encima de la anterior.
+      - name: Preparar firma
+        env:
+          FIRMA_JKS: ${{ secrets.FIRMA_JKS }}
+        run: |
+          if [ -n "$FIRMA_JKS" ]; then echo "$FIRMA_JKS" | base64 -d > firma.jks; fi
+
+      - name: Compilar
+        env:
+          FIRMA_CLAVE: ${{ secrets.FIRMA_CLAVE }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk inicio.apk
+
+      - name: Publicar en "Releases"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Inicio ${{ github.run_number }}
+          files: inicio.apk

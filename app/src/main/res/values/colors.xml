@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="texto">#FFFFFFFF</color>
+    <color name="texto_suave">#D9FFFFFF</color>
+    <color name="mosaico">#B3141414</color>
+    <color name="mosaico_foco">#E6262626</color>
+    <color name="fondo_base">#FF0E1422</color>
+    <color name="icono_fondo">#FF1B2A4A</color>
+</resources>

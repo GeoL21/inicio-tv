@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/fondo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:importantForAccessibility="no" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="220dp"
+        android:background="@drawable/velo_arriba" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="260dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/velo_abajo" />
+
+    <!-- Reloj, fecha y saludo -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="56dp"
+        android:layout_marginTop="40dp"
+        android:orientation="vertical">
+
+        <TextClock
+            android:id="@+id/reloj"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:format12Hour="h:mm"
+            android:format24Hour="H:mm"
+            android:fontFeatureSettings="tnum"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.02"
+            android:textColor="@color/texto"
+            android:textFontWeight="500"
+            android:textSize="84sp" />
+
+        <TextView
+            android:id="@+id/fecha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/texto_suave"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/saludo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/texto"
+            android:textFontWeight="500"
+            android:textSize="20sp" />
+    </LinearLayout>
+
+    <!-- Clima y accesos rápidos -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginTop="44dp"
+        android:layout_marginEnd="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/clima_icono"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:importantForAccessibility="no"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/clima"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="20dp"
+            android:fontFeatureSettings="tnum"
+            android:textColor="@color/texto"
+            android:textSize="20sp" />
+
+        <ImageButton
+            android:id="@+id/btn_red"
+            style="@style/BotonRapido"
+            android:contentDescription="@string/red"
+            android:src="@drawable/ic_red" />
+
+        <ImageButton
+            android:id="@+id/btn_entradas"
+            style="@style/BotonRapido"
+            android:contentDescription="@string/entradas"
+            android:src="@drawable/ic_entradas" />
+
+        <ImageButton
+            android:id="@+id/btn_ajustes"
+            style="@style/BotonRapido"
+            android:contentDescription="@string/ajustes"
+            android:src="@drawable/ic_ajustes" />
+    </LinearLayout>
+
+    <!-- Fila única de apps -->
+    <LinearLayout
+        android:id="@+id/fila"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="56dp"
+        android:layout_marginBottom="48dp"
+        android:clipChildren="false"
+        android:clipToPadding="false"
+        android:orientation="horizontal" />
+</FrameLayout>

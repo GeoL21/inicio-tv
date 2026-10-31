@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="BotonRapido">
+        <item name="android:layout_width">48dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_marginStart">12dp</item>
+        <item name="android:padding">12dp</item>
+        <item name="android:scaleType">fitCenter</item>
+        <item name="android:background">@drawable/boton_rapido</item>
+        <item name="android:tint">@color/icono_rapido</item>
+        <item name="android:focusable">true</item>
+    </style>
+</resources>
