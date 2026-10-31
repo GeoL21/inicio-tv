@@ -9,60 +9,85 @@ import android.media.tv.TvInputManager
 /** Entradas de la TV: cable/antena y HDMI. En la TV box no hay ninguna. */
 object Entradas {
 
+    /** Una entrada para el panel: cable o HDMI. */
+    data class Entrada(
+        val id: String,
+        val nombre: String,
+        val detalle: String?,
+        val conectada: Boolean,
+        val esCable: Boolean,
+    )
+
+    private fun tim(ctx: Context) = ctx.getSystemService(Context.TV_INPUT_SERVICE) as? TvInputManager
+
     /**
-     * App de TV en vivo (antena/cable) del equipo, si la tiene. Primero las conocidas;
-     * si no, la que abre entradas de TV (así se encuentra "Live TV" de cualquier marca).
+     * App de TV en vivo (antena/cable) del equipo, si la tiene.
+     * En la Hisense 55Q6N es com.vt.tv.tvcenter ("Live TV").
      */
     fun paqueteTv(ctx: Context): String? {
         val pm = ctx.packageManager
         val abrible = { p: String -> pm.getLeanbackLaunchIntentForPackage(p) != null || pm.getLaunchIntentForPackage(p) != null }
-        listOf("com.mediatek.wwtv.tvcenter", "com.android.tv", "com.google.android.tv")
-            .firstOrNull(abrible)?.let { return it }
-        val ver = Intent(Intent.ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput("prueba"))
-        return pm.queryIntentActivities(ver, 0).map { it.activityInfo.packageName }
-            .firstOrNull { it != "android" && abrible(it) }
+        return listOf(
+            "com.vt.tv.tvcenter",          // Hisense (Live TV)
+            "com.mediatek.wwtv.tvcenter",  // otras TV con MediaTek
+            "com.android.tv",              // TV en vivo de Android
+            "com.google.android.tv",       // Canales en vivo de Google
+        ).firstOrNull(abrible)
     }
+
+    /** El sintonizador de cable/antena (el primero, HW0 en la Hisense). */
+    private fun sintonizador(ctx: Context): TvInputInfo? = try {
+        tim(ctx)?.tvInputList
+            ?.filter { it.type == TvInputInfo.TYPE_TUNER && it.parentId == null }
+            ?.minByOrNull { it.id }
+    } catch (e: Exception) { null }
+
+    /** Cable primero; luego los HDMI, con su estado y el nombre del equipo si lo informa. */
+    fun lista(ctx: Context): List<Entrada> {
+        val tim = tim(ctx) ?: return emptyList()
+        val todas = try { tim.tvInputList } catch (e: Exception) { return emptyList() }
+        val conectada = { id: String ->
+            try { tim.getInputState(id) == TvInputManager.INPUT_STATE_CONNECTED } catch (e: Exception) { false }
+        }
+        val lista = mutableListOf<Entrada>()
+        if (paqueteTv(ctx) != null) sintonizador(ctx)?.let {
+            lista += Entrada(it.id, "Canales TV", "Cable", true, true)
+        }
+        lista += todas
+            .filter { it.type == TvInputInfo.TYPE_HDMI && it.parentId == null && !it.isHidden(ctx) }
+            .map { info ->
+                val equipo = todas.firstOrNull { it.parentId == info.id }
+                    ?.let { (it.loadCustomLabel(ctx) ?: it.loadLabel(ctx)).toString() }
+                val nombre = (info.loadCustomLabel(ctx) ?: info.loadLabel(ctx)).toString()
+                Entrada(info.id, nombre, equipo, conectada(info.id), false)
+            }
+            .sortedBy { it.nombre }
+        return lista
+    }
+
+    fun tieneHdmi(ctx: Context) = lista(ctx).any { !it.esCable }
 
     /**
-     * Abre los canales por cable. Si el equipo tiene una entrada de sintonizador,
-     * se intenta abrir esa; si no, la app de TV (que abre la última entrada usada).
+     * Abre una entrada igual que lo hace la TV: Live TV con el enlace directo
+     * a esa entrada. Si la TV no lo acepta, abre Live TV normal.
      */
-    fun abrirCable(ctx: Context): Boolean {
-        val tim = ctx.getSystemService(Context.TV_INPUT_SERVICE) as? TvInputManager
-        val sintonizador = try {
-            tim?.tvInputList?.firstOrNull { it.type == TvInputInfo.TYPE_TUNER && it.parentId == null }
-        } catch (e: Exception) { null }
-        val tv = paqueteTv(ctx)
-        if (sintonizador != null && tv != null) {
-            try {
-                ctx.startActivity(
-                    Intent(Intent.ACTION_VIEW, TvContract.buildChannelsUriForInput(sintonizador.id))
-                        .setPackage(tv)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                )
-                return true
-            } catch (_: Exception) { }
-        }
-        return tv != null && Apps.abrir(ctx, tv)
-    }
-
-    /** Entradas HDMI como (id, nombre). Las de equipos HDMI-CEC se agrupan en su puerto. */
-    fun hdmi(ctx: Context): List<Pair<String, String>> {
-        val tim = ctx.getSystemService(Context.TV_INPUT_SERVICE) as? TvInputManager ?: return emptyList()
+    fun abrir(ctx: Context, id: String): Boolean {
+        val tv = paqueteTv(ctx) ?: return false
         return try {
-            tim.tvInputList
-                .filter { it.type == TvInputInfo.TYPE_HDMI && it.parentId == null && !it.isHidden(ctx) }
-                .map { it.id to (it.loadCustomLabel(ctx) ?: it.loadLabel(ctx)).toString() }
-                .sortedBy { it.second }
-        } catch (e: Exception) { emptyList() }
+            ctx.startActivity(
+                Intent(Intent.ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput(id))
+                    .setPackage(tv)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            ); true
+        } catch (e: Exception) {
+            Apps.abrir(ctx, tv)
+        }
     }
 
-    fun abrirHdmi(ctx: Context, id: String): Boolean = try {
-        ctx.startActivity(
-            Intent(Intent.ACTION_VIEW, TvContract.buildChannelUriForPassthroughInput(id))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        ); true
-    } catch (e: Exception) {
-        paqueteTv(ctx)?.let { Apps.abrir(ctx, it) } ?: false
+    /** Canales TV: directo al sintonizador de cable. */
+    fun abrirCable(ctx: Context): Boolean {
+        val s = sintonizador(ctx)
+        if (s != null) return abrir(ctx, s.id)
+        return paqueteTv(ctx)?.let { Apps.abrir(ctx, it) } ?: false
     }
 }

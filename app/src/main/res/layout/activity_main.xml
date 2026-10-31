@@ -211,4 +211,40 @@
             android:textColor="@color/texto_suave"
             android:textSize="13sp" />
     </FrameLayout>
+
+    <!-- Panel de entradas: cable y HDMI, con cuáles tienen un equipo conectado -->
+    <FrameLayout
+        android:id="@+id/panel_entradas"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#59000000"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:id="@+id/hoja_entradas"
+            android:layout_width="380dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:background="#EB141414"
+            android:orientation="vertical"
+            android:paddingStart="28dp"
+            android:paddingTop="40dp"
+            android:paddingEnd="28dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:text="@string/entradas_titulo"
+                android:textColor="@color/texto"
+                android:textFontWeight="500"
+                android:textSize="24sp" />
+
+            <LinearLayout
+                android:id="@+id/lista_entradas"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
+    </FrameLayout>
 </FrameLayout>

@@ -30,7 +30,8 @@ object Apps {
                 vistas[paquete] = App(paquete, r.loadLabel(pm).toString(), r.activityInfo)
             }
         }
-        if (Entradas.paqueteTv(ctx) != null) vistas[CANALES_TV] = App(CANALES_TV, "Canales TV", null)
+        // Canales TV reemplaza a la app de TV en vivo, que abre la última entrada usada
+        Entradas.paqueteTv(ctx)?.let { vistas.remove(it); vistas[CANALES_TV] = App(CANALES_TV, "Canales TV", null) }
         return vistas.values.sortedBy { it.nombre.lowercase() }
     }
 

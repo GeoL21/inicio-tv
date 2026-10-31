@@ -16,4 +16,7 @@
     <string name="ayuda_apps">Mantén OK para fijar o quitar del inicio</string>
     <string name="fondos">Fondos</string>
     <string name="ayuda_fondos">OK para usar · el actual tiene marca</string>
+    <string name="entradas_titulo">Entradas</string>
+    <string name="conectado">Conectado</string>
+    <string name="sin_senal">Sin señal</string>
 </resources>

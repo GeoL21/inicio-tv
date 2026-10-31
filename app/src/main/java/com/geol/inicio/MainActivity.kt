@@ -1,7 +1,6 @@
 package com.geol.inicio
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
@@ -85,12 +84,11 @@ class MainActivity : Activity() {
         val btnTv = findViewById<ImageButton>(R.id.btn_entradas)
         if (Entradas.paqueteTv(this) == null) btnTv.visibility = View.GONE
         btnTv.setOnClickListener {
-            val p = Entradas.paqueteTv(this)
-            if (p == null || !Apps.abrir(this, p)) aviso(R.string.sin_entradas)
+            if (!Entradas.abrirCable(this)) aviso(R.string.sin_entradas)
         }
         val btnHdmi = findViewById<ImageButton>(R.id.btn_hdmi)
-        if (Entradas.hdmi(this).isEmpty()) btnHdmi.visibility = View.GONE
-        btnHdmi.setOnClickListener { elegirHdmi() }
+        if (!Entradas.tieneHdmi(this)) btnHdmi.visibility = View.GONE
+        btnHdmi.setOnClickListener { abrirPanelEntradas() }
 
         cuadricula.setOnItemClickListener { _, _, pos, _ ->
             if (!Apps.abrir(this, todas[pos].paquete)) aviso(R.string.no_abre)
@@ -125,6 +123,7 @@ class MainActivity : Activity() {
     override fun onBackPressed() {
         when {
             moviendo != null -> terminarMover()
+            panelAbierto -> cerrarPanelEntradas()
             cajonAbierto -> cerrarCajon()
         }
     }
@@ -313,15 +312,68 @@ class MainActivity : Activity() {
         }.start()
     }
 
-    private fun elegirHdmi() {
-        val entradas = Entradas.hdmi(this)
-        if (entradas.isEmpty()) { aviso(R.string.sin_hdmi); return }
-        AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-            .setTitle(R.string.hdmi)
-            .setItems(entradas.map { it.second }.toTypedArray()) { _, i ->
-                if (!Entradas.abrirHdmi(this, entradas[i].first)) aviso(R.string.no_abre)
+    // ---------- Panel de entradas (cable y HDMI) ----------
+
+    private var panelAbierto = false
+    private val panel by lazy { findViewById<View>(R.id.panel_entradas) }
+    private val hoja by lazy { findViewById<View>(R.id.hoja_entradas) }
+    private val listaEntradas by lazy { findViewById<LinearLayout>(R.id.lista_entradas) }
+
+    private fun abrirPanelEntradas() {
+        val entradas = Entradas.lista(this)
+        if (entradas.none { !it.esCable }) { aviso(R.string.sin_hdmi); return }
+        listaEntradas.removeAllViews()
+        val inflador = LayoutInflater.from(this)
+        var primeraConectada: View? = null
+        for (e in entradas) {
+            val fila = inflador.inflate(R.layout.fila_entrada, listaEntradas, false)
+            fila.findViewById<ImageView>(R.id.icono_entrada)
+                .setImageResource(if (e.esCable) R.drawable.ic_tv else R.drawable.ic_hdmi)
+            fila.findViewById<TextView>(R.id.nombre_entrada).text = e.nombre
+            fila.findViewById<TextView>(R.id.detalle_entrada).apply {
+                text = e.detalle ?: ""
+                visibility = if (e.detalle.isNullOrBlank()) View.GONE else View.VISIBLE
             }
-            .show()
+            fila.findViewById<TextView>(R.id.estado_entrada).apply {
+                visibility = if (e.esCable) View.GONE else View.VISIBLE
+                setText(if (e.conectada) R.string.conectado else R.string.sin_senal)
+            }
+            fila.findViewById<View>(R.id.punto_entrada).visibility =
+                if (!e.esCable && e.conectada) View.VISIBLE else View.GONE
+            if (!e.esCable && !e.conectada) fila.alpha = 0.5f
+            fila.setOnClickListener {
+                cerrarPanelEntradas()
+                if (!Entradas.abrir(this, e.id)) aviso(R.string.no_abre)
+            }
+            if (!e.esCable && e.conectada && primeraConectada == null) primeraConectada = fila
+            listaEntradas.addView(fila)
+        }
+        Fuente.aplicar(panel)
+
+        panelAbierto = true
+        bloquearInicio(true)
+        panel.visibility = View.VISIBLE
+        panel.alpha = 0f
+        hoja.translationX = 80 * dp
+        panel.animate().alpha(1f).setDuration(220).setInterpolator(suave).start()
+        hoja.animate().translationX(0f).setDuration(300).setInterpolator(suave).start()
+        (primeraConectada ?: listaEntradas.getChildAt(0))?.requestFocus()
+    }
+
+    /** Mientras el panel está abierto, el foco no se escapa al inicio de atrás. */
+    private fun bloquearInicio(bloquear: Boolean) {
+        val modo = if (bloquear) ViewGroup.FOCUS_BLOCK_DESCENDANTS else ViewGroup.FOCUS_AFTER_DESCENDANTS
+        listOf(R.id.barra, R.id.desplazar).forEach { findViewById<ViewGroup>(it).descendantFocusability = modo }
+    }
+
+    private fun cerrarPanelEntradas() {
+        if (!panelAbierto) return
+        panelAbierto = false
+        bloquearInicio(false)
+        hoja.animate().translationX(80 * dp).setDuration(220).setInterpolator(suave).start()
+        panel.animate().alpha(0f).setDuration(220).setInterpolator(suave)
+            .withEndAction { if (!panelAbierto) panel.visibility = View.GONE }.start()
+        findViewById<View>(R.id.btn_hdmi).requestFocus()
     }
 
     private fun abrirAjuste(vararg acciones: String) {
