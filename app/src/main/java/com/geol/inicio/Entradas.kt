@@ -35,11 +35,21 @@ object Entradas {
         ).firstOrNull(abrible)
     }
 
-    /** El sintonizador de cable/antena (el primero, HW0 en la Hisense). */
+    /**
+     * El sintonizador físico de cable/antena (HW0 en la Hisense).
+     * Ojo: entradas por software como AirPlay también se registran como "sintonizador",
+     * así que se prefieren las de hardware (id terminado en /HW<n>) y nunca AirPlay ni Cast.
+     */
     private fun sintonizador(ctx: Context): TvInputInfo? = try {
-        tim(ctx)?.tvInputList
-            ?.filter { it.type == TvInputInfo.TYPE_TUNER && it.parentId == null }
-            ?.minByOrNull { it.id }
+        val candidatos = tim(ctx)?.tvInputList.orEmpty()
+            .filter { it.type == TvInputInfo.TYPE_TUNER && it.parentId == null }
+            .filterNot { i -> listOf("airplay", "cast", "miracast", "dlna").any { i.id.contains(it, ignoreCase = true) } }
+        val hardware = Regex("/HW\\d+$")
+        candidatos.sortedWith(
+            compareByDescending<TvInputInfo> { hardware.containsMatchIn(it.id) }
+                .thenByDescending { it.id.contains("tuner", ignoreCase = true) }
+                .thenBy { it.id }
+        ).firstOrNull()
     } catch (e: Exception) { null }
 
     /** Cable primero; luego los HDMI, con su estado y el nombre del equipo si lo informa. */
