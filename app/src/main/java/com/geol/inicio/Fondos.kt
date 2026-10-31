@@ -58,7 +58,7 @@ object Fondos {
     /** Carga un fondo reducido a un ancho máximo para ahorrar memoria. */
     fun cargar(ctx: Context, clave: String, anchoMax: Int): Bitmap? {
         val medidas = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        val opciones = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.RGB_565 }
+        val opciones = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
         val recurso = INCLUIDOS.firstOrNull { it.first == clave }?.third
         val f = archivo(ctx, clave)
         if (recurso == null && (f == null || !f.exists())) return null
