@@ -20,14 +20,8 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # La firma vive en los secretos del repo (FIRMA_JKS en base64 y FIRMA_CLAVE),
-      # así todas las versiones se pueden instalar encima de la anterior.
-      - name: Preparar firma
-        env:
-          FIRMA_JKS: ${{ secrets.FIRMA_JKS }}
-        run: |
-          if [ -n "$FIRMA_JKS" ]; then echo "$FIRMA_JKS" | base64 -d > firma.jks; fi
-
+      # La firma (firma.jks) está en el repo protegida con clave;
+      # la clave vive en el secreto FIRMA_CLAVE.
       - name: Compilar
         env:
           FIRMA_CLAVE: ${{ secrets.FIRMA_CLAVE }}
