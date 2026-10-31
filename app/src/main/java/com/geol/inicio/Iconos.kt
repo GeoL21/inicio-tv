@@ -69,12 +69,13 @@ object Iconos {
             val lado = minOf(imagenPropia.width, imagenPropia.height)
             val cuadro = Bitmap.createBitmap(imagenPropia, (imagenPropia.width - lado) / 2,
                 (imagenPropia.height - lado) / 2, lado, lado)
-            lienzo.drawBitmap(escalarBien(cuadro, tamPx, tamPx), 0f, 0f, null)
+            lienzo.drawBitmap(escalarBien(cuadro, tamPx, tamPx), null,
+                android.graphics.Rect(0, 0, tamPx, tamPx), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
         } else if (banner != null) {
             // Icono viejo y pequeño (se vería pixelado): se usa el banner de TV, en alta resolución
             val fondoBanner = dibujar(banner, 64, 1f).getPixel(2, 32)
             lienzo.drawColor(if (Color.alpha(fondoBanner) > 200) fondoBanner else Color.WHITE)
-            lienzo.drawBitmap(dibujar(banner, tamPx, 0.86f), 0f, 0f, null)
+            lienzo.drawBitmap(dibujar(banner, tamPx, 0.74f), 0f, 0f, null)
         } else if (d is AdaptiveIconDrawable) {
             // Las capas miden 1,5 veces el icono; el círculo muestra el centro
             val extra = tamPx / 4
@@ -151,7 +152,10 @@ object Iconos {
             val h = maxOf(1, (src.height * escala).toInt())
             val lienzo = Canvas(bmp)
             val pincel = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-            lienzo.drawBitmap(escalarBien(src, w, h), ((tamPx - w) / 2).toFloat(), ((tamPx - h) / 2).toFloat(), pincel)
+            // Con rectángulo de destino Android no reescala por "densidad" (eso desplazaba los iconos)
+            val x = (tamPx - w) / 2
+            val y = (tamPx - h) / 2
+            lienzo.drawBitmap(escalarBien(src, w, h), null, android.graphics.Rect(x, y, x + w, y + h), pincel)
             return bmp
         }
         val ancho = d.intrinsicWidth.takeIf { it > 0 } ?: tamPx
