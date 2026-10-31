@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:clipChildren="false">
 
     <ImageView
         android:id="@+id/fondo"
@@ -29,18 +30,37 @@
         android:layout_marginTop="40dp"
         android:orientation="vertical">
 
-        <TextClock
-            android:id="@+id/reloj"
+        <!-- Hora siempre en formato de 12 horas, con a. m. / p. m. pequeño -->
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:format12Hour="h:mm"
-            android:format24Hour="H:mm"
-            android:fontFeatureSettings="tnum"
-            android:includeFontPadding="false"
-            android:letterSpacing="-0.02"
-            android:textColor="@color/texto"
-            android:textFontWeight="500"
-            android:textSize="84sp" />
+            android:baselineAligned="true"
+            android:orientation="horizontal">
+
+            <TextClock
+                android:id="@+id/reloj"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:format12Hour="h:mm"
+                android:format24Hour="h:mm"
+                android:fontFeatureSettings="tnum"
+                android:includeFontPadding="false"
+                android:letterSpacing="-0.02"
+                android:textColor="@color/texto"
+                android:textFontWeight="500"
+                android:textSize="84sp" />
+
+            <TextClock
+                android:id="@+id/ampm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:format12Hour="a"
+                android:format24Hour="a"
+                android:textColor="@color/texto_suave"
+                android:textFontWeight="500"
+                android:textSize="26sp" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/fecha"
@@ -112,8 +132,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|start"
-        android:layout_marginStart="56dp"
-        android:layout_marginBottom="48dp"
+        android:layout_marginStart="40dp"
+        android:layout_marginBottom="32dp"
+        android:padding="16dp"
         android:clipChildren="false"
         android:clipToPadding="false"
         android:orientation="horizontal" />
