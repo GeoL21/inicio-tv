@@ -66,15 +66,21 @@ El nombre del archivo es el que se ve en la miniatura. Para quitar una:
 
 ## Fuente personal (opcional)
 
-La app usa Inter. Si copias tu propia fuente con el nombre `fuente.otf` (o `fuente.ttf`)
-a la carpeta de la app, se usa esa. El archivo queda solo en tu TV: no va dentro del APK
-ni en este repositorio.
+La app usa Inter. Puedes usar tu propia fuente copiando hasta dos archivos a la
+carpeta de la app (también sirven con `.ttf`):
+
+- `fuente.otf`: textos normales (fecha, clima, ayudas)
+- `fuente-medium.otf`: reloj, saludo y nombres de apps
+
+Si solo copias `fuente.otf`, los textos medios se engrosan solos. Los archivos quedan
+solo en tu TV: no van dentro del APK ni en este repositorio.
 
 ```
-adb -s 192.168.1.49:5555 push mi-fuente.otf /sdcard/Android/data/com.geol.inicio/files/fuente.otf
+adb -s 192.168.1.49:5555 push Regular.otf /sdcard/Android/data/com.geol.inicio/files/fuente.otf
+adb -s 192.168.1.49:5555 push Medium.otf  /sdcard/Android/data/com.geol.inicio/files/fuente-medium.otf
 ```
 
-Se aplica al volver al inicio. Para volver a Inter, borra el archivo con `adb shell rm`.
+Se aplica al volver al inicio. Para volver a Inter, borra los archivos con `adb shell rm`.
 
 ## Créditos
 
