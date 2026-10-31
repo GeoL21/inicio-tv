@@ -28,23 +28,34 @@ object Iconos {
     private val cache = LruCache<String, Bitmap>(80)
 
     /** Icono de cualquier app de la lista, incluidos los accesos propios. */
-    fun de(ctx: Context, app: App, tamPx: Int): Bitmap =
-        app.info?.let { circular(ctx, it, tamPx) } ?: canalesTv(ctx, tamPx)
+    /** Apps del sistema con icono pobre en TV: se dibujan con un símbolo propio, estilo Google. */
+    private val SIMBOLOS = mapOf(
+        "com.android.tv.settings" to (R.drawable.ic_ajustes to 0xFF5F6368.toInt()),
+    )
 
-    /** Canales TV: círculo blanco con un televisor azul, como los iconos de Google. */
-    private fun canalesTv(ctx: Context, tamPx: Int): Bitmap {
-        val clave = "canales_tv/$tamPx"
+    fun de(ctx: Context, app: App, tamPx: Int): Bitmap {
+        val info = app.info ?: return simbolo(ctx, tamPx, R.drawable.ic_tv, 0xFF1A73E8.toInt(), 0.52f)
+        // Un icono propio copiado a la TV siempre gana
+        if (iconoPropio(ctx, app.paquete) == null) {
+            SIMBOLOS[app.paquete]?.let { (dibujo, color) -> return simbolo(ctx, tamPx, dibujo, color, 0.5f) }
+        }
+        return circular(ctx, info, tamPx)
+    }
+
+    /** Círculo blanco con un símbolo de color, como los iconos de Google (Canales TV, Ajustes). */
+    private fun simbolo(ctx: Context, tamPx: Int, dibujo: Int, color: Int, factor: Float): Bitmap {
+        val clave = "simbolo/$dibujo/$tamPx"
         cache.get(clave)?.let { return it }
         val bmp = Bitmap.createBitmap(tamPx, tamPx, Bitmap.Config.ARGB_8888)
         val lienzo = Canvas(bmp)
         val s = tamPx.toFloat()
-        lienzo.drawCircle(s / 2, s / 2, s / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE })
-        val tv = ctx.getDrawable(R.drawable.ic_tv)!!.mutate()
-        tv.setTint(0xFF1A73E8.toInt())
-        val lado = (s * 0.52f).toInt()
+        lienzo.drawCircle(s / 2, s / 2, s / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = Color.WHITE })
+        val d = ctx.getDrawable(dibujo)!!.mutate()
+        d.setTint(color)
+        val lado = (s * factor).toInt()
         val x = (tamPx - lado) / 2
-        tv.setBounds(x, x, x + lado, x + lado)
-        tv.draw(lienzo)
+        d.setBounds(x, x, x + lado, x + lado)
+        d.draw(lienzo)
         cache.put(clave, bmp)
         return bmp
     }
