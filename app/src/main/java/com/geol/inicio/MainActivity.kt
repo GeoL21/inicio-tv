@@ -166,7 +166,7 @@ class MainActivity : Activity() {
             val app = porPaquete[paquete] ?: continue
             val vista = inflador.inflate(R.layout.icono_app, fila, false)
             vista.tag = app.paquete
-            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.circular(this, app.info, tamFila))
+            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this, app, tamFila))
             vista.findViewById<TextView>(R.id.nombre).text = app.nombre
             vista.setOnClickListener { if (!Apps.abrir(this, app.paquete)) aviso(R.string.no_abre) }
             vista.setOnLongClickListener { empezarMover(it); true }
@@ -253,7 +253,7 @@ class MainActivity : Activity() {
                     Fuente.aplicar(this)
                 }
             val app = todas[pos]
-            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.circular(this@MainActivity, app.info, tam))
+            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this@MainActivity, app, tam))
             vista.findViewById<TextView>(R.id.nombre).text = app.nombre
             return vista
         }

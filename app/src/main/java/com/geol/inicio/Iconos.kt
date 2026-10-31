@@ -24,6 +24,28 @@ import android.util.LruCache
 object Iconos {
     private val cache = LruCache<String, Bitmap>(80)
 
+    /** Icono de cualquier app de la lista, incluidos los accesos propios. */
+    fun de(ctx: Context, app: App, tamPx: Int): Bitmap =
+        app.info?.let { circular(ctx, it, tamPx) } ?: canalesTv(ctx, tamPx)
+
+    /** Canales TV: círculo blanco con un televisor azul, como los iconos de Google. */
+    private fun canalesTv(ctx: Context, tamPx: Int): Bitmap {
+        val clave = "canales_tv/$tamPx"
+        cache.get(clave)?.let { return it }
+        val bmp = Bitmap.createBitmap(tamPx, tamPx, Bitmap.Config.ARGB_8888)
+        val lienzo = Canvas(bmp)
+        val s = tamPx.toFloat()
+        lienzo.drawCircle(s / 2, s / 2, s / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE })
+        val tv = ctx.getDrawable(R.drawable.ic_tv)!!.mutate()
+        tv.setTint(0xFF1A73E8.toInt())
+        val lado = (s * 0.52f).toInt()
+        val x = (tamPx - lado) / 2
+        tv.setBounds(x, x, x + lado, x + lado)
+        tv.draw(lienzo)
+        cache.put(clave, bmp)
+        return bmp
+    }
+
     fun circular(ctx: Context, info: ActivityInfo, tamPx: Int): Bitmap {
         val version = try {
             ctx.packageManager.getPackageInfo(info.packageName, 0).lastUpdateTime

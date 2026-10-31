@@ -7,7 +7,7 @@ Hecha desde cero por GeoL, con ayuda de Claude.
 - Clima de Barranquilla (Open-Meteo, sin cuenta ni clave)
 - Accesos rápidos: fondos, red, TV por cable, entradas HDMI (estas dos solo si el equipo las tiene) y ajustes
 - Iconos redondos al estilo del launcher de Google Pixel, en alta resolución
-- Fila de apps fijadas que se desplaza hacia los lados
+- Fila de apps fijadas que se desplaza hacia los lados, con acceso directo a **Canales TV** (cable)
 - **Flecha abajo** abre todas las apps; flecha arriba o Atrás para volver.
   Ahí, mantener OK fija o quita una app del inicio
 - Para ordenar la fila: mantén OK sobre una app, muévela con ← → y pulsa OK
