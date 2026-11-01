@@ -134,4 +134,32 @@ object SeguirViendo {
         }
         return Apps.abrir(ctx, paquete)
     }
+
+    /** Registro corto para revisar qué encuentra en cada app del dock (Android/data/com.geol.inicio/files). */
+    fun registrar(ctx: Context, paquetes: List<String>) {
+        try {
+            val t = StringBuilder("permiso: ${if (tienePermiso(ctx)) "sí" else "no"}\n")
+            for (p in paquetes) {
+                val wn = watchNext(ctx, p).size
+                val hist = historial(ctx, p)
+                t.append("$p → watch next: $wn · historial: ${hist.size}\n")
+            }
+            t.append("\ncanales de apps (no TV):\n")
+            val porCanal = HashMap<Long, Int>()
+            ctx.contentResolver.query(TvContract.PreviewPrograms.CONTENT_URI, null, null, null, null)?.use { c ->
+                val i = c.getColumnIndex("channel_id")
+                while (c.moveToNext()) { val id = c.getLong(i); porCanal[id] = (porCanal[id] ?: 0) + 1 }
+            }
+            ctx.contentResolver.query(TvContract.Channels.CONTENT_URI, null, null, null, null)?.use { c ->
+                val iPaq = c.getColumnIndex("package_name"); val iNom = c.getColumnIndex("display_name")
+                val iId = c.getColumnIndex("_id"); val iTipo = c.getColumnIndex("type")
+                while (c.moveToNext()) {
+                    if (c.getString(iTipo) != TvContract.Channels.TYPE_PREVIEW) continue
+                    val id = c.getLong(iId)
+                    t.append("  ${c.getString(iPaq)} | ${c.getString(iNom)} | id=$id | programas=${porCanal[id] ?: 0}\n")
+                }
+            }
+            java.io.File(ctx.getExternalFilesDir(null), "seguir-viendo.txt").writeText(t.toString())
+        } catch (e: Exception) { }
+    }
 }

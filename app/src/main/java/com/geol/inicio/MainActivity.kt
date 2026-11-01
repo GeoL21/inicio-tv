@@ -97,6 +97,7 @@ class MainActivity : Activity() {
         btnHdmi.setOnClickListener { abrirPanelEntradas() }
 
         armarSeguir()
+        Thread { SeguirViendo.registrar(this, Apps.fijadas(this)) }.start()
 
         cuadricula.setOnItemClickListener { _, _, pos, _ ->
             if (!Apps.abrir(this, todas[pos].paquete)) aviso(R.string.no_abre)
@@ -207,7 +208,7 @@ class MainActivity : Activity() {
                 val escala = if (foco) 1.1f else 1f
                 v.animate().scaleX(escala).scaleY(escala).setDuration(140).setInterpolator(suave).start()
                 if (foco) programarSeguir(app.paquete, v)
-                else manejador.post { if (currentFocus != seguir) ocultarSeguir() }
+                else manejador.post { if (!focoEnDockOVentana()) ocultarSeguir() }
             }
             fila.addView(vista)
             Fuente.aplicar(vista)
@@ -304,8 +305,14 @@ class MainActivity : Activity() {
         }
         seguir.setOnFocusChangeListener { _, foco ->
             actualizarPistaSeguir()
-            if (!foco) manejador.post { if (currentFocus != svOrigen && currentFocus != seguir) ocultarSeguir() }
+            if (!foco) manejador.post { if (!focoEnDockOVentana()) ocultarSeguir() }
         }
+    }
+
+    /** Si el foco pasó a otro icono del dock, ese icono ya se encarga de la ventana: no hay que ocultarla aquí. */
+    private fun focoEnDockOVentana(): Boolean {
+        val f = currentFocus ?: return false
+        return f == seguir || f.parent == fila
     }
 
     /** Al enfocar una app del dock, busca (en segundo plano) lo último que viste en ella. */
