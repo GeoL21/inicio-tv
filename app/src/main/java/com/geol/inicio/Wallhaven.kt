@@ -71,7 +71,7 @@ object Wallhaven {
     fun miniatura(url: String): Bitmap? = try {
         val con = conectar(url)
         try { con.inputStream.use { BitmapFactory.decodeStream(it) } } finally { con.disconnect() }
-    } catch (e: Exception) { null }
+    } catch (e: Throwable) { null }
 
     /**
      * Descarga la foto, la reduce a 1920 px de ancho y la guarda en la carpeta de fondos.

@@ -53,7 +53,7 @@ class FondosActivity : Activity() {
     private var pagina = 0
     private var ultima = 1
     private var cargando = false
-    private var turno = 0
+    @Volatile private var turno = 0
     private var yaCargoLinea = false
     private val descargas = HashMap<String, Float>()  // id → avance 0..1
 
@@ -235,7 +235,7 @@ class FondosActivity : Activity() {
         cargando = true
         val miTurno = turno; val siguiente = pagina + 1; val q = busqueda
         mostrarMensaje(if (fotos.isEmpty()) getString(R.string.cargando) else null)
-        Hilos.red.execute {
+        Hilos.datos.execute {
             val resultado = try { Result.success(Wallhaven.buscar(q, siguiente)) } catch (e: Exception) { Result.failure(e) }
             runOnUiThread {
                 if (isDestroyed || miTurno != turno) return@runOnUiThread
@@ -357,6 +357,9 @@ class FondosActivity : Activity() {
         }
 
     private inner class AdaptadorMios : BaseAdapter() {
+        private var actual = ""
+        override fun notifyDataSetChanged() { actual = Fondos.actual(this@FondosActivity); super.notifyDataSetChanged() }
+        init { actual = Fondos.actual(this@FondosActivity) }
         override fun getCount() = fondos.size
         override fun getItem(pos: Int) = fondos[pos]
         override fun getItemId(pos: Int) = pos.toLong()
@@ -364,7 +367,6 @@ class FondosActivity : Activity() {
         override fun getView(pos: Int, reciclada: View?, padre: ViewGroup): View {
             val vista = reciclada ?: nuevaMiniatura(padre)
             val f = fondos[pos]
-            val actual = Fondos.actual(this@FondosActivity)
             vista.findViewById<ImageView>(R.id.imagen).setImageBitmap(miniaturas[f.clave])
             vista.findViewById<TextView>(R.id.nombre).text = f.nombre
             vista.findViewById<View>(R.id.marca).visibility = if (f.clave == actual) View.VISIBLE else View.GONE
@@ -403,11 +405,13 @@ class FondosActivity : Activity() {
 
     private fun pedirMiniatura(url: String) {
         if (!pidiendo.add(url)) return
+        val miTurno = turno
         Hilos.red.execute {
-            val bmp = Wallhaven.miniatura(url)
+            // Si ya cambiaste de categoría, esta miniatura no se descarga
+            val bmp = if (miTurno != turno) null else Wallhaven.miniatura(url)
             runOnUiThread {
                 pidiendo.remove(url)
-                if (bmp != null && !isDestroyed) { minisLinea.put(url, bmp); adaptadorLinea.notifyDataSetChanged() }
+                if (bmp != null && !isDestroyed && miTurno == turno) { minisLinea.put(url, bmp); adaptadorLinea.notifyDataSetChanged() }
             }
         }
     }

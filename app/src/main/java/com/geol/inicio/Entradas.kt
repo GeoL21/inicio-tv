@@ -89,7 +89,10 @@ object Entradas {
         return lista
     }
 
-    fun tieneHdmi(ctx: Context) = lista(ctx).any { !it.esCable }
+    /** ¿Hay entradas HDMI? Consulta rápida (sin armar la lista completa). */
+    fun tieneHdmi(ctx: Context): Boolean = try {
+        tim(ctx)?.tvInputList.orEmpty().any { it.type == TvInputInfo.TYPE_HDMI && it.parentId == null }
+    } catch (e: Exception) { false }
 
     /**
      * Abre una entrada igual que lo hace la TV: Live TV con el enlace directo

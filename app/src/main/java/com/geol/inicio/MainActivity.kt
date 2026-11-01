@@ -62,7 +62,8 @@ class MainActivity : Activity() {
             actualizarFechaYSaludo()
             aplicarModo(forzar = false)   // a las 6 p. m. y 6 a. m. cambia solo
             if (System.currentTimeMillis() - ultimoClima > 30 * 60_000L) actualizarClima()
-            manejador.postDelayed(this, 60_000L)
+            // Justo al cambiar el minuto: la fecha y el saludo cambian a la vez que el reloj
+            manejador.postDelayed(this, 60_000L - System.currentTimeMillis() % 60_000L + 200L)
         }
     }
 
@@ -104,7 +105,8 @@ class MainActivity : Activity() {
 
         // HDMI: se oculta en equipos que no lo tienen (la TV box)
         val btnHdmi = findViewById<ImageButton>(R.id.btn_hdmi)
-        if (!Entradas.tieneHdmi(this)) btnHdmi.visibility = View.GONE
+        hayHdmi = Entradas.tieneHdmi(this)
+        if (!hayHdmi) btnHdmi.visibility = View.GONE
         btnHdmi.setOnClickListener { abrirPanelEntradas() }
 
         armarSeguir()
@@ -147,8 +149,18 @@ class MainActivity : Activity() {
      */
     private var firmaHecha = ""
     private var firmaCajon = ""
+    /** Al encender, las entradas de la TV pueden tardar en estar listas: se revisa unas veces más. */
+    private var hayHdmi = false
+    private var intentosHdmi = 0
+    private fun revisarHdmi() {
+        if (hayHdmi || intentosHdmi >= 10) return
+        intentosHdmi++
+        if (Entradas.tieneHdmi(this)) { hayHdmi = true; findViewById<View>(R.id.btn_hdmi).visibility = View.VISIBLE }
+    }
+
     private fun refrescar() {
         revisarFondo()
+        revisarHdmi()
         noche = Modo.esNoche(this)
         val propios = Iconos.releerPropios(this)
         if (appsCambiaron) { appsCambiaron = false; todas = Apps.todas(this) }

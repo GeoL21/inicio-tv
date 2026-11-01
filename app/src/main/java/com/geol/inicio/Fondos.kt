@@ -93,8 +93,11 @@ object Fondos {
         val f = archivo(ctx, clave)
         if (recurso == null && (f == null || !f.exists())) return null
 
-        if (recurso != null) BitmapFactory.decodeResource(ctx.resources, recurso, medidas)
-        else BitmapFactory.decodeFile(f!!.path, medidas)
+        try {
+            if (recurso != null) BitmapFactory.decodeResource(ctx.resources, recurso, medidas)
+            else BitmapFactory.decodeFile(f!!.path, medidas)
+        } catch (e: Throwable) { return null }
+        if (medidas.outWidth <= 0) return null          // archivo dañado o que no es imagen
         var escala = 1
         while (medidas.outWidth / (escala * 2) >= anchoMax) escala *= 2
         opciones.inSampleSize = escala
@@ -102,6 +105,6 @@ object Fondos {
         return try {
             if (recurso != null) BitmapFactory.decodeResource(ctx.resources, recurso, opciones)
             else BitmapFactory.decodeFile(f!!.path, opciones)
-        } catch (e: OutOfMemoryError) { null }
+        } catch (e: Throwable) { null }
     }
 }

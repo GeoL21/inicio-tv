@@ -117,7 +117,7 @@ object SeguirViendo {
         return try {
             val bytes = if (uri.startsWith("http")) {
                 val con = (URL(uri).openConnection() as HttpURLConnection).apply { connectTimeout = 6000; readTimeout = 6000 }
-                con.inputStream.use { it.readBytes() }.also { con.disconnect() }
+                try { con.inputStream.use { it.readBytes() } } finally { con.disconnect() }
             } else ctx.contentResolver.openInputStream(android.net.Uri.parse(uri))?.use { it.readBytes() } ?: return null
             val medidas = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, medidas)
@@ -125,7 +125,7 @@ object SeguirViendo {
             while (medidas.outWidth / (escala * 2) >= 640) escala *= 2
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = escala })
                 ?.also { imagenes.put(uri, it) }
-        } catch (e: Exception) { null }
+        } catch (e: Throwable) { null }       // también si falta memoria: el inicio nunca se cae
     }
 
     /** Abre justo lo que dejaste a medias; si el enlace falla, abre la app. */
