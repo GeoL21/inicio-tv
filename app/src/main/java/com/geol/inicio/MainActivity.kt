@@ -77,7 +77,11 @@ class MainActivity : Activity() {
             abrirAjuste(Settings.ACTION_SETTINGS)
         }
 
-        // Día / noche / automático
+        // Día / noche / automático. La "A" va dentro del círculo y cambia de color con el foco
+        val insignia = findViewById<TextView>(R.id.insignia_auto)
+        findViewById<ImageButton>(R.id.btn_modo).setOnFocusChangeListener { _, foco ->
+            insignia.setTextColor(if (foco) 0xFF111111.toInt() else 0xFFFFFFFF.toInt())
+        }
         findViewById<ImageButton>(R.id.btn_modo).setOnClickListener {
             aviso(when (Modo.siguiente(this)) {
                 Modo.Estado.AUTOMATICO -> R.string.modo_auto
@@ -344,7 +348,12 @@ class MainActivity : Activity() {
     private fun aplicarModo(forzar: Boolean) {
         val estado = Modo.estado(this)
         val ahora = Modo.esNoche(this)
-        findViewById<ImageButton>(R.id.btn_modo).setImageResource(if (ahora) R.drawable.ic_luna else R.drawable.ic_dia)
+        val boton = findViewById<ImageButton>(R.id.btn_modo)
+        boton.setImageResource(if (ahora) R.drawable.ic_luna else R.drawable.ic_dia)
+        // En automático el icono se corre un poco hacia arriba a la izquierda para dejarle sitio a la "A"
+        val p = { v: Int -> (v * dp).toInt() }
+        if (estado == Modo.Estado.AUTOMATICO) boton.setPadding(p(10), p(10), p(14), p(14))
+        else boton.setPadding(p(12), p(12), p(12), p(12))
         findViewById<View>(R.id.insignia_auto).visibility =
             if (estado == Modo.Estado.AUTOMATICO) View.VISIBLE else View.GONE
         if (ahora != noche || forzar) {

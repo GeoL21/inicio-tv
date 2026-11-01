@@ -128,18 +128,18 @@
 
             <TextView
                 android:id="@+id/insignia_auto"
-                android:layout_width="17dp"
-                android:layout_height="17dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
-                android:layout_marginEnd="-3dp"
-                android:layout_marginBottom="-3dp"
-                android:background="@drawable/insignia_auto"
-                android:gravity="center"
+                android:layout_marginEnd="9dp"
+                android:layout_marginBottom="7dp"
+                android:duplicateParentState="false"
+                android:focusable="false"
                 android:includeFontPadding="false"
                 android:text="A"
-                android:textColor="@color/texto"
+                android:textColor="#FFFFFFFF"
                 android:textFontWeight="500"
-                android:textSize="10sp" />
+                android:textSize="11sp" />
         </FrameLayout>
 
         <ImageButton android:id="@+id/btn_hdmi" style="@style/BotonRapido"

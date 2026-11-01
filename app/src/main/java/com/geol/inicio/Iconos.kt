@@ -96,12 +96,9 @@ object Iconos {
                 android.graphics.Rect(0, 0, tamPx, tamPx), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
         } else if (banner != null) {
             // Icono viejo y pequeño (se vería pixelado): se usa el banner de TV, en alta resolución
+            // El círculo toma el color de fondo del banner, así nunca se ve el rectángulo
             val fondoBanner = dibujar(banner, 64, 1f).getPixel(2, 32)
-            lienzo.drawColor(when {
-                Color.alpha(fondoBanner) <= 200 -> blanco
-                noche && esClaro(fondoBanner) -> OSCURO
-                else -> fondoBanner
-            })
+            lienzo.drawColor(if (Color.alpha(fondoBanner) <= 200) blanco else fondoBanner)
             lienzo.drawBitmap(dibujar(banner, tamPx, 0.74f), 0f, 0f, null)
         } else if (d is AdaptiveIconDrawable) {
             // Las capas miden 1,5 veces el icono; el círculo muestra el centro
@@ -125,13 +122,25 @@ object Iconos {
             val alfa = { x: Float, y: Float -> Color.alpha(prueba.getPixel((x * s).toInt(), (y * s).toInt())) }
             val esquinaVacia = alfa(0.07f, 0.07f) < 40
             val bordeLleno = alfa(0.5f, 0.04f) > 200 && alfa(0.04f, 0.5f) > 200
+            val fondoIcono = colorDeFondo(prueba)
             if (esquinaVacia && bordeLleno) {
                 // Ya es redondo: se agranda un poco para llenar el círculo
                 lienzo.drawBitmap(dibujar(d, tamPx, 1.06f), 0f, 0f, null)
+            } else if (fondoIcono != null) {
+                // Icono cuadrado con fondo propio (Netflix, Xuper, YouTube…): el círculo toma
+                // ese color y el icono se recorta a su contenido, así no se ve el cuadrado
+                lienzo.drawColor(fondoIcono)
+                val grande = dibujar(d, tamPx * 2, 1f)   // al doble, para que el recorte no pierda nitidez
+                val caja = cajaContenido(grande)
+                val recorte = Bitmap.createBitmap(grande, caja.left, caja.top, caja.width(), caja.height())
+                val lado = (s * 0.86f).toInt()
+                val o = (tamPx - lado) / 2
+                lienzo.drawBitmap(escalarBien(recorte, lado, lado), null,
+                    android.graphics.Rect(o, o, o + lado, o + lado), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
             } else {
+                // Logo con transparencia: sobre círculo blanco (de día) u oscuro (de noche)
                 lienzo.drawColor(blanco)
-                val factor = if (!esquinaVacia) 0.62f else 0.72f
-                lienzo.drawBitmap(dibujar(d, tamPx, factor), 0f, 0f, null)
+                lienzo.drawBitmap(dibujar(d, tamPx, 0.72f), 0f, 0f, null)
             }
         }
 
@@ -143,6 +152,39 @@ object Iconos {
         Canvas(final).drawCircle(s / 2, s / 2, s / 2, pincel)
         cache.put(clave, final)
         return final
+    }
+
+    /** Zona del icono que no es transparente. */
+    private fun cajaContenido(b: Bitmap): android.graphics.Rect {
+        var l = b.width; var t = b.height; var r = 0; var bo = 0
+        for (y in 0 until b.height step 2) for (x in 0 until b.width step 2) {
+            if (Color.alpha(b.getPixel(x, y)) > 40) {
+                if (x < l) l = x; if (x > r) r = x; if (y < t) t = y; if (y > bo) bo = y
+            }
+        }
+        if (r <= l || bo <= t) return android.graphics.Rect(0, 0, b.width, b.height)
+        return android.graphics.Rect(l, t, minOf(b.width, r + 2), minOf(b.height, bo + 2))
+    }
+
+    /**
+     * Color de fondo de un icono cuadrado: el de su borde interior, si es opaco y parejo
+     * en los cuatro lados. Si el icono es un logo transparente, devuelve null.
+     */
+    private fun colorDeFondo(b: Bitmap): Int? {
+        val c = cajaContenido(b)
+        val dx = maxOf(2, c.width() / 12); val dy = maxOf(2, c.height() / 12)
+        val muestras = listOf(
+            b.getPixel(c.centerX(), c.top + dy), b.getPixel(c.centerX(), c.bottom - 1 - dy),
+            b.getPixel(c.left + dx, c.centerY()), b.getPixel(c.right - 1 - dx, c.centerY()),
+        )
+        if (muestras.any { Color.alpha(it) < 230 }) return null
+        val base = muestras[0]
+        val parecido = muestras.all {
+            Math.abs(Color.red(it) - Color.red(base)) < 40 &&
+                Math.abs(Color.green(it) - Color.green(base)) < 40 &&
+                Math.abs(Color.blue(it) - Color.blue(base)) < 40
+        }
+        return if (parecido) base or 0xFF000000.toInt() else null
     }
 
     /** Icono propio: /sdcard/Android/data/com.geol.inicio/files/iconos/<paquete>.png (o .jpg/.webp). */
