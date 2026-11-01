@@ -7,6 +7,9 @@ import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Path
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.graphics.Shader
 import android.graphics.BitmapFactory
 import android.graphics.drawable.AdaptiveIconDrawable
@@ -17,7 +20,10 @@ import android.util.LruCache
 import java.io.File
 
 /**
- * Iconos circulares al estilo del launcher de Google Pixel:
+ * Iconos de apps en forma de squircle (cuadrado de esquinas muy suaves), en dos estilos:
+ * originales (los colores de cada app) o temáticos (estilo Material You: un solo tono
+ * tomado del fondo de pantalla, claro de día y oscuro de noche).
+ * Originales:
  * - Icono moderno (adaptativo): su diseño llena todo el círculo.
  * - Icono ya redondo: se ajusta al círculo.
  * - Icono cuadrado o con transparencias: logo centrado sobre un círculo blanco.
@@ -41,7 +47,26 @@ object Iconos {
         return Color.alpha(color) > 200 && l > 215
     }
 
-    fun de(ctx: Context, app: App, tamPx: Int, noche: Boolean = false): Bitmap {
+    /** Forma squircle (superelipse |x|⁴+|y|⁴=1), la misma para todas las apps. */
+    private val formas = HashMap<Int, Path>()
+    fun forma(tamPx: Int): Path = formas.getOrPut(tamPx) {
+        val r = tamPx / 2.0
+        Path().apply {
+            for (i in 0..96) {
+                val t = 2 * Math.PI * i / 96
+                val c = Math.cos(t); val sn = Math.sin(t)
+                val x = r + r * Math.signum(c) * Math.pow(Math.abs(c), 0.5)
+                val y = r + r * Math.signum(sn) * Math.pow(Math.abs(sn), 0.5)
+                if (i == 0) moveTo(x.toFloat(), y.toFloat()) else lineTo(x.toFloat(), y.toFloat())
+            }
+            close()
+        }
+    }
+
+    fun de(ctx: Context, app: App, tamPx: Int, noche: Boolean = false, paleta: Paleta? = null): Bitmap {
+        if (paleta != null && (app.info == null || iconoPropio(ctx, app.paquete) == null)) {
+            tematico(ctx, app, tamPx, noche, paleta)?.let { return it }
+        }
         val info = app.info ?: return simbolo(ctx, tamPx, R.drawable.ic_tv,
             if (noche) 0xFF8AB4F8.toInt() else 0xFF1A73E8.toInt(), 0.52f, noche)
         // Un icono propio copiado a la TV siempre gana
@@ -60,7 +85,7 @@ object Iconos {
         val bmp = Bitmap.createBitmap(tamPx, tamPx, Bitmap.Config.ARGB_8888)
         val lienzo = Canvas(bmp)
         val s = tamPx.toFloat()
-        lienzo.drawCircle(s / 2, s / 2, s / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = if (noche) OSCURO else Color.WHITE })
+        lienzo.drawPath(forma(tamPx), Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = if (noche) OSCURO else Color.WHITE })
         val d = ctx.getDrawable(dibujo)!!.mutate()
         d.setTint(color)
         val lado = (s * factor).toInt()
@@ -163,14 +188,115 @@ object Iconos {
             }
         }
 
-        // Recorte circular con borde suavizado (clipPath no suaviza)
+        // Recorte en squircle con borde suavizado (clipPath no suaviza)
         val final = Bitmap.createBitmap(tamPx, tamPx, Bitmap.Config.ARGB_8888)
         val pincel = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
             shader = BitmapShader(contenido, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
         }
-        Canvas(final).drawCircle(s / 2, s / 2, s / 2, pincel)
+        Canvas(final).drawPath(forma(tamPx), pincel)
         cache.put(clave, final)
         return final
+    }
+
+    // ---------- Temáticos (Material You) ----------
+
+    /** Squircle del tono del fondo con la silueta del logo en otro tono del mismo color. */
+    private fun tematico(ctx: Context, app: App, tamPx: Int, noche: Boolean, paleta: Paleta): Bitmap? {
+        val fondo = paleta.fondoIcono(noche)
+        val logo = paleta.logoIcono(noche)
+        val version = app.info?.let {
+            try { ctx.packageManager.getPackageInfo(it.packageName, 0).lastUpdateTime } catch (e: Exception) { 0L }
+        } ?: 0L
+        val clave = "tema/${app.paquete}/$tamPx/$fondo/$logo/$version"
+        cache.get(clave)?.let { return it }
+
+        val grande = tamPx * 2
+        val mascara: Bitmap = when {
+            app.info == null -> vectorComoMascara(ctx, R.drawable.ic_tv, grande)
+            SIMBOLOS.containsKey(app.paquete) -> vectorComoMascara(ctx, SIMBOLOS[app.paquete]!!.first, grande)
+            else -> silueta(ctx, app.info, grande) ?: return null
+        }
+        val caja = cajaContenido(mascara)
+        if (caja.width() < 4 || caja.height() < 4) return null
+        val recorte = Bitmap.createBitmap(mascara, caja.left, caja.top, caja.width(), caja.height())
+
+        val bmp = Bitmap.createBitmap(tamPx, tamPx, Bitmap.Config.ARGB_8888)
+        val lienzo = Canvas(bmp)
+        lienzo.drawPath(forma(tamPx), Paint(Paint.ANTI_ALIAS_FLAG).apply { color = fondo })
+        // El logo ocupa como máximo el 56 % del icono, con su proporción
+        val maximo = tamPx * 0.56f
+        val escala = maximo / maxOf(recorte.width, recorte.height)
+        val w = maxOf(1, (recorte.width * escala).toInt()); val h = maxOf(1, (recorte.height * escala).toInt())
+        val x = (tamPx - w) / 2; val y = (tamPx - h) / 2
+        val pincel = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply {
+            colorFilter = PorterDuffColorFilter(logo, PorterDuff.Mode.SRC_IN)
+        }
+        lienzo.drawBitmap(escalarBien(recorte, w, h), null, android.graphics.Rect(x, y, x + w, y + h), pincel)
+        cache.put(clave, bmp)
+        return bmp
+    }
+
+    private fun vectorComoMascara(ctx: Context, dibujo: Int, tam: Int): Bitmap {
+        val bmp = Bitmap.createBitmap(tam, tam, Bitmap.Config.ARGB_8888)
+        ctx.getDrawable(dibujo)!!.mutate().apply { setBounds(0, 0, tam, tam); draw(Canvas(bmp)) }
+        return bmp
+    }
+
+    /**
+     * Silueta del logo de una app: solo lo que es logo queda opaco.
+     * Usa el icono monocromo oficial si la app lo trae (Android 13+); si no, la saca
+     * quitando el fondo del icono o del banner.
+     */
+    private fun silueta(ctx: Context, info: ActivityInfo, tam: Int): Bitmap? {
+        val d = original(ctx, info)
+        if (d is AdaptiveIconDrawable) {
+            if (android.os.Build.VERSION.SDK_INT >= 33) d.monochrome?.let { mono ->
+                val b = Bitmap.createBitmap(tam, tam, Bitmap.Config.ARGB_8888)
+                val extra = tam / 4
+                mono.setBounds(-extra, -extra, tam + extra, tam + extra); mono.draw(Canvas(b))
+                return b
+            }
+            val fg = d.foreground ?: return null
+            val b = Bitmap.createBitmap(tam, tam, Bitmap.Config.ARGB_8888)
+            val extra = tam / 4
+            fg.setBounds(-extra, -extra, tam + extra, tam + extra); fg.draw(Canvas(b))
+            // Si la capa del frente llena todo (sin transparencias), se separa el logo por color
+            return colorDeFondo(b)?.let { quitarColor(b, it) } ?: b
+        }
+        val banner = if (esBajaResolucion(d, tam / 2)) banner(ctx, info) else null
+        val b = dibujar(banner ?: d, tam, 1f)
+        val fondo = colorDeFondo(b) ?: return b          // logo con transparencia: ya es la silueta
+        return if (esParejo(b)) quitarColor(b, fondo) else quitarPorContraste(b, fondo)
+    }
+
+    /** Quita de toda la imagen el color de fondo (también los huecos, como el triángulo de YouTube). */
+    private fun quitarColor(src: Bitmap, fondo: Int): Bitmap {
+        val w = src.width; val h = src.height
+        val px = IntArray(w * h); src.getPixels(px, 0, w, 0, 0, w, h)
+        for (i in px.indices) {
+            val c = px[i]
+            if (Color.alpha(c) < 40) { px[i] = 0; continue }
+            val d = maxOf(Math.abs(Color.red(c) - Color.red(fondo)),
+                Math.abs(Color.green(c) - Color.green(fondo)), Math.abs(Color.blue(c) - Color.blue(fondo)))
+            val a = ((d - 40) * 255 / 90).coerceIn(0, 255)
+            px[i] = (minOf(a, Color.alpha(c)) shl 24) or 0x00FFFFFF
+        }
+        return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)
+    }
+
+    /** Para fondos con degradado (Xuper): queda solo lo que contrasta mucho con el fondo. */
+    private fun quitarPorContraste(src: Bitmap, fondo: Int): Bitmap {
+        val w = src.width; val h = src.height
+        val px = IntArray(w * h); src.getPixels(px, 0, w, 0, 0, w, h)
+        val luzFondo = 0.3 * Color.red(fondo) + 0.59 * Color.green(fondo) + 0.11 * Color.blue(fondo)
+        for (i in px.indices) {
+            val c = px[i]
+            if (Color.alpha(c) < 40) { px[i] = 0; continue }
+            val luz = 0.3 * Color.red(c) + 0.59 * Color.green(c) + 0.11 * Color.blue(c)
+            val a = (((Math.abs(luz - luzFondo)) - 50) * 255 / 70).toInt().coerceIn(0, 255)
+            px[i] = (a shl 24) or 0x00FFFFFF
+        }
+        return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)
     }
 
     /** Zona del icono que no es transparente. */

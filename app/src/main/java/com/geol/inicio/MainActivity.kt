@@ -190,10 +190,11 @@ class MainActivity : Activity() {
             val vista = inflador.inflate(R.layout.icono_app, fila, false)
             vista.tag = app.paquete
             vista.layoutParams.width = px(anchoDp)
-            vista.findViewById<View>(R.id.marco).layoutParams.apply {
-                width = px(iconoDp + 10); height = px(iconoDp + 10)
+            vista.findViewById<View>(R.id.marco).apply {
+                layoutParams.apply { width = px(iconoDp + 10); height = px(iconoDp + 10) }
+                background = anillo(px(iconoDp + 10))
             }
-            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this, app, px(iconoDp), noche))
+            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this, app, px(iconoDp), noche, paletaIconos()))
             val etiqueta = vista.findViewById<TextView>(R.id.nombre)
             etiqueta.textSize = if (n <= 6) 13f else 12f
             vista.setOnClickListener { if (!Apps.abrir(this, app.paquete)) aviso(R.string.no_abre) }
@@ -312,15 +313,16 @@ class MainActivity : Activity() {
                     // En la cuadrícula el foco lo maneja la cuadrícula, no cada icono
                     isFocusable = false
                     isClickable = false
-                    findViewById<View>(R.id.marco).layoutParams.apply {
+                    findViewById<View>(R.id.marco).apply {
                         val lado = tam + (10 * resources.displayMetrics.density).toInt()
-                        width = lado; height = lado
+                        layoutParams.apply { width = lado; height = lado }
+                        background = anillo(lado)
                     }
                     findViewById<TextView>(R.id.nombre).textSize = 12f
                     Fuente.aplicar(this)
                 }
             val app = todas[pos]
-            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this@MainActivity, app, tam, noche))
+            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this@MainActivity, app, tam, noche, paletaIconos()))
             val etiqueta = vista.findViewById<TextView>(R.id.nombre)
             etiqueta.textSize = 12f
             etiqueta.text = cortarPorPalabras(app.nombre, etiqueta, 96 * dp)
@@ -339,6 +341,47 @@ class MainActivity : Activity() {
         val fondo = findViewById<ImageView>(R.id.fondo)
         val bmp = Fondos.cargar(this, Fondos.actual(this), 1920)
         if (bmp != null) fondo.setImageBitmap(bmp) else fondo.setImageResource(R.drawable.fondo)
+        paleta = Paleta.desde(bmp ?: Fondos.cargar(this, "res:noche", 480))
+        aplicarPaleta()
+    }
+
+    /** Colores Material You sacados del fondo actual. */
+    private var paleta = Paleta.PREDETERMINADA
+
+    /** Paleta para los iconos: solo si están en modo temático. */
+    private fun paletaIconos(): Paleta? = if (EstiloIconos.tematicos(this)) paleta else null
+
+    /** Velo muy suave del color del fondo en el dock y en los botones de arriba. */
+    private fun aplicarPaleta() {
+        findViewById<View>(R.id.dock).background = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = 36 * dp; setColor(paleta.veloDock())
+        }
+        for (id in listOf(R.id.btn_fondos, R.id.btn_red, R.id.btn_modo, R.id.btn_hdmi, R.id.btn_ajustes)) {
+            findViewById<View>(id).background = android.graphics.drawable.StateListDrawable().apply {
+                addState(intArrayOf(android.R.attr.state_focused), android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(0xFFFFFFFF.toInt())
+                })
+                addState(intArrayOf(), android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL; setColor(paleta.veloBoton())
+                })
+            }
+        }
+    }
+
+    /** Anillo de foco con la forma de los iconos (squircle). */
+    private fun anillo(ladoPx: Int): android.graphics.drawable.Drawable {
+        fun forma(trazo: Boolean, discontinuo: Boolean) = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = ladoPx * 0.34f
+            if (discontinuo) { setColor(0x33FFFFFF); setStroke((2.5f * dp).toInt(), 0xFFFFFFFF.toInt(), 6 * dp, 4 * dp) }
+            else if (trazo) setStroke((2.5f * dp).toInt(), 0xFFFFFFFF.toInt())
+            else setColor(0)
+        }
+        return android.graphics.drawable.StateListDrawable().apply {
+            addState(intArrayOf(android.R.attr.state_activated), forma(true, true))
+            addState(intArrayOf(android.R.attr.state_focused), forma(true, false))
+            addState(intArrayOf(android.R.attr.state_selected), forma(true, false))
+            addState(intArrayOf(), forma(false, false))
+        }
     }
 
     /** ¿Los iconos se dibujan en modo noche? */

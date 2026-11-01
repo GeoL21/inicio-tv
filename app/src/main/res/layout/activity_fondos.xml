@@ -23,13 +23,40 @@
         android:paddingTop="40dp"
         android:paddingEnd="56dp">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/fondos"
-            android:textColor="@color/texto"
-            android:textFontWeight="500"
-            android:textSize="28sp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/fondos"
+                android:textColor="@color/texto"
+                android:textFontWeight="500"
+                android:textSize="28sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="12dp"
+                android:text="@string/iconos"
+                android:textColor="@color/texto_suave"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/chip_originales"
+                style="@style/Chip"
+                android:text="@string/originales" />
+
+            <TextView
+                android:id="@+id/chip_tematicos"
+                style="@style/Chip"
+                android:layout_marginStart="8dp"
+                android:text="@string/tematicos" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"

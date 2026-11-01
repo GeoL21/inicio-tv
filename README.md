@@ -8,7 +8,9 @@ Hecha desde cero por GeoL, con ayuda de Claude.
 - Accesos rápidos: fondos, red, día/noche, entradas HDMI (solo si el equipo las tiene) y ajustes
 - **Día / noche:** de 6 p. m. a 6 a. m. los iconos pasan a círculos oscuros. El botón recorre
   Automático (con una "A") → Noche → Día
-- Iconos redondos al estilo del launcher de Google Pixel, en alta resolución
+- Iconos en **squircle**, en alta resolución. En Fondos eliges **Originales** (colores de cada app)
+  o **Temáticos** (estilo Material You: un solo tono sacado del fondo de pantalla, claro de día y oscuro de noche)
+- El dock y los botones de arriba toman un velo muy suave del color del fondo
 - Dock centrado de hasta **8 apps**: los iconos se achican solos a medida que agregas apps.
   Los nombres largos se cortan por palabras ("Xuper Crystal Clear" → "Xuper")
 - Acceso directo **Canales TV** (entra directo al cable) y panel de entradas HDMI con las conectadas

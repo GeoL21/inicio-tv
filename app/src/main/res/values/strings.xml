@@ -30,4 +30,7 @@
     <string name="modo_auto">Automático: noche de 6 p. m. a 6 a. m.</string>
     <string name="modo_noche">Modo noche</string>
     <string name="modo_dia">Modo día</string>
+    <string name="iconos">Iconos</string>
+    <string name="originales">Originales</string>
+    <string name="tematicos">Temáticos</string>
 </resources>

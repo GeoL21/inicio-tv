@@ -39,6 +39,18 @@ class FondosActivity : Activity() {
         val actual = fondos.indexOfFirst { it.clave == Fondos.actual(this) }
         if (actual >= 0) cuadricula.setSelection(actual)
         cuadricula.requestFocus()
+
+        // Iconos: Originales | Temáticos (el elegido queda marcado)
+        val chipOriginales = findViewById<TextView>(R.id.chip_originales)
+        val chipTematicos = findViewById<TextView>(R.id.chip_tematicos)
+        fun marcar() {
+            val t = EstiloIconos.tematicos(this)
+            chipOriginales.isActivated = !t
+            chipTematicos.isActivated = t
+        }
+        marcar()
+        chipOriginales.setOnClickListener { EstiloIconos.elegir(this, false); marcar() }
+        chipTematicos.setOnClickListener { EstiloIconos.elegir(this, true); marcar() }
         Fuente.aplicar(window.decorView)
 
         // Miniaturas pequeñas en segundo plano para no trabar el control remoto
