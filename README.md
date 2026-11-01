@@ -69,6 +69,21 @@ bash debloat/deshacer.sh 192.168.1.49   # TV Hisense
 bash debloat/deshacer.sh 192.168.1.9    # TV box Xiaomi
 ```
 
+## Seguir viendo (opcional)
+
+Al detenerte sobre **Netflix** o **SmartTube** en el dock aparece una ventana con lo último que viste.
+**↑** entra a la ventana, **← →** recorre si hay varios, **OK** sigue donde lo dejaste y **↓** o Atrás vuelve.
+YouTube y Xuper no comparten su historial con Android, así que en ellas no aparece.
+
+Necesita un permiso que se da una sola vez por equipo:
+
+```fish
+adb connect 192.168.1.49
+adb -s 192.168.1.49:5555 shell pm grant com.geol.inicio android.permission.READ_TV_LISTINGS
+adb connect 192.168.1.9
+adb -s 192.168.1.9:5555 shell pm grant com.geol.inicio android.permission.READ_TV_LISTINGS
+```
+
 ## Fondos de pantalla
 
 El botón de imagen (arriba, junto a red) abre **Fondos**: miniaturas de los 5 fondos

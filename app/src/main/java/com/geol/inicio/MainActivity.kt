@@ -96,6 +96,8 @@ class MainActivity : Activity() {
         if (!Entradas.tieneHdmi(this)) btnHdmi.visibility = View.GONE
         btnHdmi.setOnClickListener { abrirPanelEntradas() }
 
+        armarSeguir()
+
         cuadricula.setOnItemClickListener { _, _, pos, _ ->
             if (!Apps.abrir(this, todas[pos].paquete)) aviso(R.string.no_abre)
         }
@@ -121,13 +123,13 @@ class MainActivity : Activity() {
         Fuente.aplicar(window.decorView)
         manejador.removeCallbacks(cadaMinuto)
         manejador.post(cadaMinuto)
-        SeguirViendo.diagnosticar(this)
     }
 
     override fun onPause() {
         super.onPause()
         manejador.removeCallbacks(cadaMinuto)
         terminarMover()
+        ocultarSeguir()
     }
 
     // Es la pantalla de inicio: Atrás solo cierra el cajón o termina de mover.
@@ -153,6 +155,7 @@ class MainActivity : Activity() {
             }
             return true
         }
+        if (teclaSeguir(e)) return true
         if (e.action == KeyEvent.ACTION_DOWN) {
             val foco = currentFocus
             if (!cajonAbierto && e.keyCode == KeyEvent.KEYCODE_DPAD_DOWN && foco?.parent == fila) {
@@ -203,6 +206,8 @@ class MainActivity : Activity() {
             vista.setOnFocusChangeListener { v, foco ->
                 val escala = if (foco) 1.1f else 1f
                 v.animate().scaleX(escala).scaleY(escala).setDuration(140).setInterpolator(suave).start()
+                if (foco) programarSeguir(app.paquete, v)
+                else manejador.post { if (currentFocus != seguir) ocultarSeguir() }
             }
             fila.addView(vista)
             Fuente.aplicar(vista)
@@ -264,6 +269,173 @@ class MainActivity : Activity() {
         pista.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_flecha_abajo, 0, 0, 0)
     }
 
+    // ---------- Seguir viendo ----------
+
+    private lateinit var seguir: View
+    private lateinit var svImagen: ImageView
+    private lateinit var svTitulo: TextView
+    private lateinit var svDetalle: TextView
+    private lateinit var svPista: TextView
+    private lateinit var svProgreso: View
+    private lateinit var svPistaProgreso: View
+    private lateinit var svPuntos: LinearLayout
+
+    private var svPaquete: String? = null      // app de la que se muestra la ventana
+    private var svOrigen: View? = null         // icono del dock que la abrió
+    private var svItems: List<SeguirViendo.Item> = emptyList()
+    private var svIndice = 0
+    private var svTurno = 0                    // descarta respuestas viejas al cambiar de app
+    private var svPendiente: Runnable? = null
+
+    private fun armarSeguir() {
+        seguir = findViewById(R.id.seguir)
+        svImagen = findViewById(R.id.sv_imagen)
+        svTitulo = findViewById(R.id.sv_titulo)
+        svDetalle = findViewById(R.id.sv_detalle)
+        svPista = findViewById(R.id.sv_pista)
+        svProgreso = findViewById(R.id.sv_progreso)
+        svPistaProgreso = findViewById(R.id.sv_pista_progreso)
+        svPuntos = findViewById(R.id.sv_puntos)
+        seguir.clipToOutline = true            // la imagen respeta las esquinas redondeadas
+        seguir.setOnClickListener {
+            val paquete = svPaquete ?: return@setOnClickListener
+            val item = svItems.getOrNull(svIndice) ?: return@setOnClickListener
+            if (!SeguirViendo.abrir(this, paquete, item)) aviso(R.string.no_abre)
+        }
+        seguir.setOnFocusChangeListener { _, foco ->
+            actualizarPistaSeguir()
+            if (!foco) manejador.post { if (currentFocus != svOrigen && currentFocus != seguir) ocultarSeguir() }
+        }
+    }
+
+    /** Al enfocar una app del dock, busca (en segundo plano) lo último que viste en ella. */
+    private fun programarSeguir(paquete: String, origen: View) {
+        if (seguir.visibility == View.VISIBLE && svPaquete == paquete) { svOrigen = origen; actualizarPistaSeguir(); return }
+        ocultarSeguir()
+        if (moviendo != null || cajonAbierto || panelAbierto || !SeguirViendo.tienePermiso(this)) return
+        val turno = ++svTurno
+        val tarea = Runnable {
+            Thread {
+                val items = SeguirViendo.de(this, paquete)
+                runOnUiThread {
+                    if (turno == svTurno && currentFocus == origen && items.isNotEmpty() && moviendo == null && !cajonAbierto)
+                        mostrarSeguir(paquete, origen, items)
+                }
+            }.start()
+        }
+        svPendiente = tarea
+        manejador.postDelayed(tarea, 350)       // solo si te detienes en la app, no al pasar de largo
+    }
+
+    private fun mostrarSeguir(paquete: String, origen: View, items: List<SeguirViendo.Item>) {
+        svPaquete = paquete; svOrigen = origen; svItems = items; svIndice = 0
+        pintarItem(animar = false)
+        seguir.visibility = View.INVISIBLE
+        seguir.post {
+            // Encima del icono, sin salirse de la pantalla
+            val pos = IntArray(2); origen.getLocationInWindow(pos)
+            val dock = findViewById<View>(R.id.dock)
+            val dockPos = IntArray(2); dock.getLocationInWindow(dockPos)
+            val raiz = window.decorView
+            val centro = pos[0] + origen.width / 2
+            val margen = (24 * dp).toInt()
+            val x = (centro - seguir.width / 2).coerceIn(margen, raiz.width - seguir.width - margen)
+            (seguir.layoutParams as android.widget.FrameLayout.LayoutParams).apply {
+                marginStart = x
+                bottomMargin = raiz.height - dockPos[1] + (14 * dp).toInt()
+            }
+            seguir.requestLayout()
+            seguir.alpha = 0f
+            seguir.translationY = 12 * dp
+            seguir.visibility = View.VISIBLE
+            seguir.animate().alpha(1f).translationY(0f).setDuration(200).setInterpolator(suave).start()
+        }
+    }
+
+    private fun ocultarSeguir() {
+        svPendiente?.let { manejador.removeCallbacks(it) }
+        svPendiente = null
+        svTurno++
+        if (seguir.visibility == View.GONE) return
+        if (currentFocus == seguir) svOrigen?.requestFocus()
+        svPaquete = null
+        seguir.animate().cancel()
+        seguir.animate().alpha(0f).translationY(8 * dp).setDuration(140)
+            .withEndAction { if (svPaquete == null) seguir.visibility = View.GONE }.start()
+    }
+
+    private fun pintarItem(animar: Boolean) {
+        val item = svItems.getOrNull(svIndice) ?: return
+        svTitulo.text = item.titulo
+        svDetalle.text = item.detalle ?: ""
+        svDetalle.visibility = if (item.detalle == null) View.GONE else View.VISIBLE
+        val p = item.progreso
+        svPistaProgreso.visibility = if (p == null) View.GONE else View.VISIBLE
+        if (p != null) {
+            svProgreso.layoutParams.width = ((300 * dp) * p.coerceAtLeast(0.03f)).toInt()
+            svProgreso.requestLayout()
+        }
+        // Puntos solo si hay más de uno
+        svPuntos.removeAllViews()
+        if (svItems.size > 1) for (i in svItems.indices) {
+            svPuntos.addView(View(this).apply {
+                setBackgroundResource(R.drawable.seguir_punto)
+                alpha = if (i == svIndice) 1f else 0.3f
+                layoutParams = LinearLayout.LayoutParams((6 * dp).toInt(), (6 * dp).toInt()).apply { marginStart = (5 * dp).toInt() }
+            })
+        }
+        actualizarPistaSeguir()
+        // Imagen en segundo plano; si ya estaba guardada aparece al instante
+        svImagen.setImageDrawable(null)
+        val uri = item.imagen ?: return
+        val turno = svTurno; val indice = svIndice
+        Thread {
+            val bmp = SeguirViendo.imagen(this, uri)
+            runOnUiThread {
+                if (bmp != null && turno == svTurno && indice == svIndice) {
+                    svImagen.setImageBitmap(bmp)
+                    if (animar) { svImagen.alpha = 0f; svImagen.animate().alpha(1f).setDuration(160).start() }
+                }
+            }
+        }.start()
+    }
+
+    private fun actualizarPistaSeguir() {
+        if (!::seguir.isInitialized) return
+        svPista.setText(when {
+            !seguir.isFocused -> R.string.sv_elegir
+            svItems.size > 1 -> R.string.sv_mas
+            else -> R.string.sv_continuar
+        })
+    }
+
+    /** ↑ desde el icono entra a la ventana; dentro: ← → recorre, ↓ o Atrás vuelve al icono. */
+    private fun teclaSeguir(e: KeyEvent): Boolean {
+        if (!::seguir.isInitialized || seguir.visibility != View.VISIBLE || svPaquete == null) return false
+        val foco = currentFocus
+        if (foco == svOrigen && e.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+            if (e.action == KeyEvent.ACTION_DOWN) seguir.requestFocus()
+            return true
+        }
+        if (foco != seguir) return false
+        when (e.keyCode) {
+            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                if (e.action == KeyEvent.ACTION_DOWN && svItems.size > 1) {
+                    val paso = if (e.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) 1 else -1
+                    svIndice = (svIndice + paso + svItems.size) % svItems.size
+                    pintarItem(animar = true)
+                }
+                return true
+            }
+            KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_BACK -> {
+                if (e.action == KeyEvent.ACTION_UP) svOrigen?.requestFocus()
+                return true
+            }
+            KeyEvent.KEYCODE_DPAD_UP -> return true       // no salta a los botones de arriba
+        }
+        return false
+    }
+
     // ---------- Cajón con todas las apps ----------
 
     /** Lo que forma el inicio: se desvanece cuando suben las apps. */
@@ -275,6 +447,7 @@ class MainActivity : Activity() {
 
     private fun abrirCajon() {
         cajonAbierto = true
+        ocultarSeguir()
         for (v in portada) {
             v.animate().cancel()
             v.animate().alpha(0f).translationY(-24 * dp).setDuration(220).setInterpolator(suave)

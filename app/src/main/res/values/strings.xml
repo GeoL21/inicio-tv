@@ -33,4 +33,8 @@
     <string name="iconos">Iconos</string>
     <string name="originales">Originales</string>
     <string name="tematicos">Temáticos</string>
+    <string name="seguir_viendo">Seguir viendo</string>
+    <string name="sv_elegir">↑ para elegir</string>
+    <string name="sv_continuar">OK para continuar</string>
+    <string name="sv_mas">OK para continuar · ← → más</string>
 </resources>
