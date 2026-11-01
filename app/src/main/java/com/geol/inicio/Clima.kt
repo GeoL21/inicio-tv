@@ -21,6 +21,7 @@ object Clima {
         val con = (url.openConnection() as HttpURLConnection).apply {
             connectTimeout = 8000; readTimeout = 8000
         }
+        if (con.responseCode != 200) { con.disconnect(); throw java.io.IOException() }
         val texto = con.inputStream.bufferedReader().use { it.readText() }
         con.disconnect()
         val actual = JSONObject(texto).getJSONObject("current")

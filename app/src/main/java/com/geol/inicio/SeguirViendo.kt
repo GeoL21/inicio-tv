@@ -32,14 +32,19 @@ object SeguirViendo {
 
     private val CANALES_HISTORIAL = setOf("historial", "history", "seguir viendo", "continue watching")
 
+    /** Suelta las imágenes guardadas si Android pide memoria. */
+    fun recortar(nivel: Int) {
+        if (nivel >= android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND) imagenes.evictAll()
+    }
+
     fun tienePermiso(ctx: Context) = ctx.checkSelfPermission("android.permission.READ_TV_LISTINGS") == 0
 
     /** Lo último que viste en una app (máximo 5). Se guarda 1 minuto para no consultar a cada rato. */
     fun de(ctx: Context, paquete: String): List<Item> {
         if (!tienePermiso(ctx)) return emptyList()
-        datos[paquete]?.let { if (System.currentTimeMillis() - it.cuando < 60_000L) return it.items }
+        synchronized(datos) { datos[paquete] }?.let { if (System.currentTimeMillis() - it.cuando < 60_000L) return it.items }
         val items = watchNext(ctx, paquete).ifEmpty { historial(ctx, paquete) }.take(5)
-        datos[paquete] = Guardado(System.currentTimeMillis(), items)
+        synchronized(datos) { datos[paquete] = Guardado(System.currentTimeMillis(), items) }
         return items
     }
 
@@ -129,37 +134,12 @@ object SeguirViendo {
             try {
                 val intent = if (it.startsWith("intent:") || it.contains("#Intent;")) Intent.parseUri(it, Intent.URI_INTENT_SCHEME)
                              else Intent(Intent.ACTION_VIEW, android.net.Uri.parse(it)).setPackage(paquete)
+                // El enlace solo puede abrir la misma app que lo publicó
+                intent.selector = null
+                if ((intent.component?.packageName ?: intent.`package`) != paquete) { intent.component = null; intent.setPackage(paquete) }
                 ctx.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)); return true
             } catch (_: Exception) { }
         }
         return Apps.abrir(ctx, paquete)
-    }
-
-    /** Registro corto para revisar qué encuentra en cada app del dock (Android/data/com.geol.inicio/files). */
-    fun registrar(ctx: Context, paquetes: List<String>) {
-        try {
-            val t = StringBuilder("permiso: ${if (tienePermiso(ctx)) "sí" else "no"}\n")
-            for (p in paquetes) {
-                val wn = watchNext(ctx, p).size
-                val hist = historial(ctx, p)
-                t.append("$p → watch next: $wn · historial: ${hist.size}\n")
-            }
-            t.append("\ncanales de apps (no TV):\n")
-            val porCanal = HashMap<Long, Int>()
-            ctx.contentResolver.query(TvContract.PreviewPrograms.CONTENT_URI, null, null, null, null)?.use { c ->
-                val i = c.getColumnIndex("channel_id")
-                while (c.moveToNext()) { val id = c.getLong(i); porCanal[id] = (porCanal[id] ?: 0) + 1 }
-            }
-            ctx.contentResolver.query(TvContract.Channels.CONTENT_URI, null, null, null, null)?.use { c ->
-                val iPaq = c.getColumnIndex("package_name"); val iNom = c.getColumnIndex("display_name")
-                val iId = c.getColumnIndex("_id"); val iTipo = c.getColumnIndex("type")
-                while (c.moveToNext()) {
-                    if (c.getString(iTipo) != TvContract.Channels.TYPE_PREVIEW) continue
-                    val id = c.getLong(iId)
-                    t.append("  ${c.getString(iPaq)} | ${c.getString(iNom)} | id=$id | programas=${porCanal[id] ?: 0}\n")
-                }
-            }
-            java.io.File(ctx.getExternalFilesDir(null), "seguir-viendo.txt").writeText(t.toString())
-        } catch (e: Exception) { }
     }
 }

@@ -26,7 +26,18 @@ class MainActivity : Activity() {
 
     private val manejador = Handler(Looper.getMainLooper())
     private val espanol = Locale("es", "CO")
-    private var ultimoClima = 0L
+    @Volatile private var ultimoClima = 0L
+    private var activa = false
+
+    /** Se avisa cuando se instala, actualiza o quita una app: solo entonces se vuelve a leer la lista. */
+    private var appsCambiaron = true
+    private val alCambiarApps = object : android.content.BroadcastReceiver() {
+        override fun onReceive(c: android.content.Context, i: Intent) {
+            appsCambiaron = true
+            Iconos.olvidarVersiones()
+            if (activa) manejador.post { refrescar() }
+        }
+    }
 
     private lateinit var fecha: TextView
     private lateinit var saludo: TextView
@@ -97,7 +108,15 @@ class MainActivity : Activity() {
         btnHdmi.setOnClickListener { abrirPanelEntradas() }
 
         armarSeguir()
-        Thread { SeguirViendo.registrar(this, Apps.fijadas(this)) }.start()
+        Fuente.aplicar(window.decorView)
+
+        val filtro = android.content.IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED); addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_CHANGED); addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addDataScheme("package")
+        }
+        if (android.os.Build.VERSION.SDK_INT >= 33) registerReceiver(alCambiarApps, filtro, RECEIVER_NOT_EXPORTED)
+        else registerReceiver(alCambiarApps, filtro)
 
         cuadricula.setOnItemClickListener { _, _, pos, _ ->
             if (!Apps.abrir(this, todas[pos].paquete)) aviso(R.string.no_abre)
@@ -116,18 +135,69 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        revisarFondo()
-        todas = Apps.todas(this)
-        noche = Modo.esNoche(this)
-        cuadricula.adapter = AdaptadorCajon()
-        if (moviendo == null) armarFila(enfocar = !cajonAbierto)
-        Fuente.aplicar(window.decorView)
+        activa = true
+        refrescar()
         manejador.removeCallbacks(cadaMinuto)
         manejador.post(cadaMinuto)
     }
 
+    /**
+     * Al volver al inicio solo se rehace lo que cambió (fondo, apps, modo, iconos propios);
+     * si nada cambió, el inicio aparece tal como estaba, sin trabajo extra.
+     */
+    private var firmaHecha = ""
+    private var firmaCajon = ""
+    private fun refrescar() {
+        revisarFondo()
+        noche = Modo.esNoche(this)
+        val propios = Iconos.releerPropios(this)
+        if (appsCambiaron) { appsCambiaron = false; todas = Apps.todas(this) }
+        val firmaIconos = "${nocheIconos()}/${paletaIconos()}/$propios/${todas.size}/${todas.hashCode()}"
+        if (firmaIconos != firmaCajon) {
+            firmaCajon = firmaIconos
+            cuadricula.adapter = AdaptadorCajon()
+            precalentarCajon()
+        }
+        if (moviendo == null) {
+            if (firmaDock() != firmaHecha) armarFila(enfocar = !cajonAbierto)
+            else if (!cajonAbierto && !panelAbierto && currentFocus == null) fila.getChildAt(0)?.requestFocus()
+        }
+    }
+
+    private fun firmaDock() = "${Apps.fijadas(this)}/$firmaCajon"
+
+    /** Prepara los iconos del cajón en segundo plano, para que se abra fluido. */
+    private fun precalentarCajon() {
+        val lista = todas; val tam = (60 * dp).toInt()
+        val n = nocheIconos(); val p = paletaIconos(); val ctx = applicationContext
+        Hilos.iconos.execute { for (app in lista) Iconos.de(ctx, app, tam, n, p) }
+    }
+
+    /** Botón Inicio estando ya en el inicio: todo vuelve a su lugar (cierra el cajón y los paneles). */
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        if (moviendo != null) terminarMover()
+        if (panelAbierto) cerrarPanelEntradas()
+        if (cajonAbierto) cerrarCajon()
+        ocultarSeguir()
+    }
+
+    override fun onTrimMemory(nivel: Int) {
+        super.onTrimMemory(nivel)
+        Iconos.recortar(nivel)
+        SeguirViendo.recortar(nivel)
+        // Si se soltaron los iconos, al volver se dibujan otra vez
+        if (nivel >= android.content.ComponentCallbacks2.TRIM_MEMORY_MODERATE) { firmaHecha = ""; firmaCajon = "" }
+    }
+
+    override fun onDestroy() {
+        try { unregisterReceiver(alCambiarApps) } catch (_: Exception) { }
+        super.onDestroy()
+    }
+
     override fun onPause() {
         super.onPause()
+        activa = false
         manejador.removeCallbacks(cadaMinuto)
         terminarMover()
         ocultarSeguir()
@@ -214,6 +284,7 @@ class MainActivity : Activity() {
             Fuente.aplicar(vista)
             etiqueta.text = cortarPorPalabras(app.nombre, etiqueta, px(anchoDp - 8).toFloat())
         }
+        firmaHecha = firmaDock()
         if (enfocar) {
             val destino = (0 until fila.childCount).map { fila.getChildAt(it) }
                 .firstOrNull { it.tag == enfocado } ?: fila.getChildAt(0)
@@ -322,13 +393,13 @@ class MainActivity : Activity() {
         if (moviendo != null || cajonAbierto || panelAbierto || !SeguirViendo.tienePermiso(this)) return
         val turno = ++svTurno
         val tarea = Runnable {
-            Thread {
-                val items = SeguirViendo.de(this, paquete)
+            Hilos.datos.execute {
+                val items = SeguirViendo.de(applicationContext, paquete)
                 runOnUiThread {
                     if (turno == svTurno && currentFocus == origen && items.isNotEmpty() && moviendo == null && !cajonAbierto)
                         mostrarSeguir(paquete, origen, items)
                 }
-            }.start()
+            }
         }
         svPendiente = tarea
         manejador.postDelayed(tarea, 350)       // solo si te detienes en la app, no al pasar de largo
@@ -396,15 +467,15 @@ class MainActivity : Activity() {
         svImagen.setImageDrawable(null)
         val uri = item.imagen ?: return
         val turno = svTurno; val indice = svIndice
-        Thread {
-            val bmp = SeguirViendo.imagen(this, uri)
+        Hilos.red.execute {
+            val bmp = SeguirViendo.imagen(applicationContext, uri)
             runOnUiThread {
                 if (bmp != null && turno == svTurno && indice == svIndice) {
                     svImagen.setImageBitmap(bmp)
                     if (animar) { svImagen.alpha = 0f; svImagen.animate().alpha(1f).setDuration(160).start() }
                 }
             }
-        }.start()
+        }
     }
 
     private fun actualizarPistaSeguir() {
@@ -602,15 +673,17 @@ class MainActivity : Activity() {
 
     private fun actualizarClima() {
         ultimoClima = System.currentTimeMillis()
-        Thread {
-            val dato = Clima.consultar() ?: return@Thread
+        Hilos.red.execute {
+            // Sin internet (por ejemplo, recién encendida la TV): se intenta otra vez en 5 minutos
+            val dato = Clima.consultar() ?: run { ultimoClima = System.currentTimeMillis() - 25 * 60_000L; null }
+                ?: return@execute
             runOnUiThread {
                 climaIcono.setImageResource(dato.icono)
                 climaIcono.visibility = View.VISIBLE
                 clima.text = if (dato.descripcion.isEmpty()) "${dato.grados}°"
                              else "${dato.grados}° · ${dato.descripcion}"
             }
-        }.start()
+        }
     }
 
     // ---------- Panel de entradas (cable y HDMI) ----------

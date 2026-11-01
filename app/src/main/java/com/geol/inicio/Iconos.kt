@@ -31,7 +31,26 @@ import java.io.File
  * con bordes suavizados, para que no pierda calidad.
  */
 object Iconos {
-    private val cache = LruCache<String, Bitmap>(80)
+    /** Iconos ya dibujados, medidos en bytes (1/8 de la memoria de la app, entre 8 y 24 MB). */
+    private val cache = object : LruCache<String, Bitmap>(
+        (Runtime.getRuntime().maxMemory() / 8).coerceIn(8L shl 20, 24L shl 20).toInt()
+    ) {
+        override fun sizeOf(clave: String, bmp: Bitmap) = bmp.byteCount
+    }
+
+    /** Versión de cada app (cambia al actualizarla); se olvida cuando se instala o quita algo. */
+    private val versiones = java.util.concurrent.ConcurrentHashMap<String, Long>()
+    private fun version(ctx: Context, paquete: String): Long = versiones.getOrPut(paquete) {
+        try { ctx.packageManager.getPackageInfo(paquete, 0).lastUpdateTime } catch (e: Exception) { 0L }
+    }
+    fun olvidarVersiones() = versiones.clear()
+
+    /** Si Android pide memoria con la TV en otra app, se suelta parte o todo lo guardado. */
+    fun recortar(nivel: Int) {
+        if (nivel >= android.content.ComponentCallbacks2.TRIM_MEMORY_MODERATE) cache.evictAll()
+        else if (nivel >= android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND ||
+            nivel == android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL) cache.trimToSize(cache.maxSize() / 2)
+    }
 
     /** Icono de cualquier app de la lista, incluidos los accesos propios. */
     /** Apps del sistema con icono pobre en TV: se dibujan con un símbolo propio, estilo Google. */
@@ -49,7 +68,7 @@ object Iconos {
 
     /** Forma squircle (superelipse |x|⁴+|y|⁴=1), la misma para todas las apps. */
     private val formas = HashMap<Int, Path>()
-    fun forma(tamPx: Int): Path = formas.getOrPut(tamPx) {
+    fun forma(tamPx: Int): Path = synchronized(formas) { formas.getOrPut(tamPx) {
         val r = tamPx / 2.0
         Path().apply {
             for (i in 0..96) {
@@ -61,9 +80,28 @@ object Iconos {
             }
             close()
         }
+    } }
+
+    /**
+     * Nunca falla: si el icono de alguna app viene dañado o falta memoria, se usa su icono
+     * simple. Así una app mal hecha no puede dejar la TV sin pantalla de inicio.
+     */
+    fun de(ctx: Context, app: App, tamPx: Int, noche: Boolean = false, paleta: Paleta? = null): Bitmap =
+        try { dibujarIcono(ctx, app, tamPx, noche, paleta) } catch (t: Throwable) { respaldo(ctx, app, tamPx) }
+
+    private fun respaldo(ctx: Context, app: App, tamPx: Int): Bitmap {
+        val bmp = Bitmap.createBitmap(tamPx, tamPx, Bitmap.Config.ARGB_8888)
+        try {
+            val lienzo = Canvas(bmp)
+            lienzo.drawPath(forma(tamPx), Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE })
+            val d = app.info?.loadIcon(ctx.packageManager) ?: ctx.getDrawable(R.drawable.ic_tv)
+            val m = tamPx / 6
+            d?.setBounds(m, m, tamPx - m, tamPx - m); d?.draw(lienzo)
+        } catch (_: Throwable) { }
+        return bmp
     }
 
-    fun de(ctx: Context, app: App, tamPx: Int, noche: Boolean = false, paleta: Paleta? = null): Bitmap {
+    private fun dibujarIcono(ctx: Context, app: App, tamPx: Int, noche: Boolean, paleta: Paleta?): Bitmap {
         if (paleta != null && (app.info == null || iconoPropio(ctx, app.paquete) == null)) {
             tematico(ctx, app, tamPx, noche, paleta)?.let { return it }
         }
@@ -97,11 +135,9 @@ object Iconos {
     }
 
     fun circular(ctx: Context, info: ActivityInfo, tamPx: Int, noche: Boolean = false): Bitmap {
-        val version = try {
-            ctx.packageManager.getPackageInfo(info.packageName, 0).lastUpdateTime
-        } catch (e: Exception) { 0L }
+        val version = version(ctx, info.packageName)
         val propio = iconoPropio(ctx, info.packageName)
-        val clave = "${info.packageName}/${info.name}/$tamPx/$version/${propio?.lastModified() ?: 0}/$noche"
+        val clave = "${info.packageName}/${info.name}/$tamPx/$version/${propio?.let { propios?.get(info.packageName)?.second } ?: 0}/$noche"
         val blanco = if (noche) OSCURO else Color.WHITE
         cache.get(clave)?.let { return it }
 
@@ -204,9 +240,7 @@ object Iconos {
     private fun tematico(ctx: Context, app: App, tamPx: Int, noche: Boolean, paleta: Paleta): Bitmap? {
         val fondo = paleta.fondoIcono(noche)
         val logo = paleta.logoIcono(noche)
-        val version = app.info?.let {
-            try { ctx.packageManager.getPackageInfo(it.packageName, 0).lastUpdateTime } catch (e: Exception) { 0L }
-        } ?: 0L
+        val version = app.info?.let { version(ctx, it.packageName) } ?: 0L
         val clave = "tema/${app.paquete}/$tamPx/$fondo/$logo/$version"
         cache.get(clave)?.let { return it }
 
@@ -301,9 +335,11 @@ object Iconos {
 
     /** Zona del icono que no es transparente. */
     private fun cajaContenido(b: Bitmap): android.graphics.Rect {
+        val w = b.width
+        val px = IntArray(w * b.height); b.getPixels(px, 0, w, 0, 0, w, b.height)   // de una vez, no punto por punto
         var l = b.width; var t = b.height; var r = 0; var bo = 0
-        for (y in 0 until b.height step 2) for (x in 0 until b.width step 2) {
-            if (Color.alpha(b.getPixel(x, y)) > 40) {
+        for (y in 0 until b.height step 2) for (x in 0 until w step 2) {
+            if ((px[y * w + x] ushr 24) > 40) {
                 if (x < l) l = x; if (x > r) r = x; if (y < t) t = y; if (y > bo) bo = y
             }
         }
@@ -386,10 +422,23 @@ object Iconos {
     }
 
     /** Icono propio: /sdcard/Android/data/com.geol.inicio/files/iconos/<paquete>.png (o .jpg/.webp). */
-    private fun iconoPropio(ctx: Context, paquete: String): File? {
-        val dir = ctx.getExternalFilesDir(null)?.let { File(it, "iconos") } ?: return null
-        return listOf("png", "jpg", "webp").map { File(dir, "$paquete.$it") }.firstOrNull { it.exists() }
+    @Volatile private var propios: Map<String, Pair<File, Long>>? = null
+
+    /** Lee la carpeta de iconos propios una sola vez (al volver al inicio), no por cada icono. */
+    fun releerPropios(ctx: Context): String {
+        val dir = ctx.getExternalFilesDir(null)?.let { File(it, "iconos") }
+        val mapa = HashMap<String, Pair<File, Long>>()
+        dir?.listFiles()?.sortedBy { listOf("png", "jpg", "webp").indexOf(it.extension.lowercase()).let { i -> if (i < 0) 9 else i } }
+            ?.forEach { f ->
+                if (f.extension.lowercase() in setOf("png", "jpg", "webp") && f.nameWithoutExtension !in mapa)
+                    mapa[f.nameWithoutExtension] = f to f.lastModified()
+            }
+        propios = mapa
+        return mapa.entries.sortedBy { it.key }.joinToString { "${it.key}:${it.value.second}" }
     }
+
+    private fun iconoPropio(ctx: Context, paquete: String): File? =
+        (propios ?: run { releerPropios(ctx); propios })?.get(paquete)?.first
 
     /** ¿El icono es tan pequeño que se vería pixelado al agrandarlo? */
     private fun esBajaResolucion(d: Drawable, tamPx: Int): Boolean =
