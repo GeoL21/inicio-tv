@@ -121,6 +121,7 @@ class MainActivity : Activity() {
         Fuente.aplicar(window.decorView)
         manejador.removeCallbacks(cadaMinuto)
         manejador.post(cadaMinuto)
+        SeguirViendo.diagnosticar(this)
     }
 
     override fun onPause() {
@@ -194,7 +195,7 @@ class MainActivity : Activity() {
                 layoutParams.apply { width = px(iconoDp + 10); height = px(iconoDp + 10) }
                 background = anillo(px(iconoDp + 10))
             }
-            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this, app, px(iconoDp), noche, paletaIconos()))
+            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this, app, px(iconoDp), nocheIconos(), paletaIconos()))
             val etiqueta = vista.findViewById<TextView>(R.id.nombre)
             etiqueta.textSize = if (n <= 6) 13f else 12f
             vista.setOnClickListener { if (!Apps.abrir(this, app.paquete)) aviso(R.string.no_abre) }
@@ -322,7 +323,7 @@ class MainActivity : Activity() {
                     Fuente.aplicar(this)
                 }
             val app = todas[pos]
-            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this@MainActivity, app, tam, noche, paletaIconos()))
+            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this@MainActivity, app, tam, nocheIconos(), paletaIconos()))
             val etiqueta = vista.findViewById<TextView>(R.id.nombre)
             etiqueta.textSize = 12f
             etiqueta.text = cortarPorPalabras(app.nombre, etiqueta, 96 * dp)
@@ -347,6 +348,9 @@ class MainActivity : Activity() {
 
     /** Colores Material You sacados del fondo actual. */
     private var paleta = Paleta.PREDETERMINADA
+
+    /** Solo los iconos temáticos cambian de noche; los originales se ven siempre igual. */
+    private fun nocheIconos() = noche && EstiloIconos.tematicos(this)
 
     /** Paleta para los iconos: solo si están en modo temático. */
     private fun paletaIconos(): Paleta? = if (EstiloIconos.tematicos(this)) paleta else null
