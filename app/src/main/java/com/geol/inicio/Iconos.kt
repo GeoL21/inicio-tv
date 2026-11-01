@@ -98,8 +98,15 @@ object Iconos {
             // Icono viejo y pequeño (se vería pixelado): se usa el banner de TV, en alta resolución
             // El círculo toma el color de fondo del banner, así nunca se ve el rectángulo
             val fondoBanner = dibujar(banner, 64, 1f).getPixel(2, 32)
-            lienzo.drawColor(if (Color.alpha(fondoBanner) <= 200) blanco else fondoBanner)
-            lienzo.drawBitmap(dibujar(banner, tamPx, 0.74f), 0f, 0f, null)
+            val dibujado = dibujar(banner, tamPx, 0.74f)
+            if (noche && Color.alpha(fondoBanner) > 200 && esClaro(fondoBanner)) {
+                // De noche: el blanco del borde se cambia por el círculo oscuro (Netflix queda rojo sobre oscuro)
+                lienzo.drawColor(OSCURO)
+                lienzo.drawBitmap(quitarFondoDelBorde(dibujado, fondoBanner), 0f, 0f, null)
+            } else {
+                lienzo.drawColor(if (Color.alpha(fondoBanner) <= 200) blanco else fondoBanner)
+                lienzo.drawBitmap(dibujado, 0f, 0f, null)
+            }
         } else if (d is AdaptiveIconDrawable) {
             // Las capas miden 1,5 veces el icono; el círculo muestra el centro
             val extra = tamPx / 4
@@ -127,16 +134,28 @@ object Iconos {
                 // Ya es redondo: se agranda un poco para llenar el círculo
                 lienzo.drawBitmap(dibujar(d, tamPx, 1.06f), 0f, 0f, null)
             } else if (fondoIcono != null) {
-                // Icono cuadrado con fondo propio (Netflix, Xuper, YouTube…): el círculo toma
-                // ese color y el icono se recorta a su contenido, así no se ve el cuadrado
-                lienzo.drawColor(fondoIcono)
+                // Icono cuadrado con fondo propio (Netflix, Xuper, YouTube…)
                 val grande = dibujar(d, tamPx * 2, 1f)   // al doble, para que el recorte no pierda nitidez
                 val caja = cajaContenido(grande)
                 val recorte = Bitmap.createBitmap(grande, caja.left, caja.top, caja.width(), caja.height())
-                val lado = (s * 0.86f).toInt()
-                val o = (tamPx - lado) / 2
-                lienzo.drawBitmap(escalarBien(recorte, lado, lado), null,
-                    android.graphics.Rect(o, o, o + lado, o + lado), Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG))
+                val pincel = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
+                if (!esParejo(prueba)) {
+                    // Fondo con degradado (Xuper): el icono cubre todo el círculo, sin costuras
+                    lienzo.drawBitmap(escalarBien(recorte, tamPx, tamPx), null,
+                        android.graphics.Rect(0, 0, tamPx, tamPx), pincel)
+                } else {
+                    val lado = (s * 0.86f).toInt()
+                    val o = (tamPx - lado) / 2
+                    var imagen = escalarBien(recorte, lado, lado)
+                    if (noche && esClaro(fondoIcono)) {
+                        // De noche: el blanco del borde se cambia por el círculo oscuro
+                        lienzo.drawColor(OSCURO)
+                        imagen = quitarFondoDelBorde(imagen, fondoIcono)
+                    } else {
+                        lienzo.drawColor(fondoIcono)   // el círculo toma el color del icono
+                    }
+                    lienzo.drawBitmap(imagen, null, android.graphics.Rect(o, o, o + lado, o + lado), pincel)
+                }
             } else {
                 // Logo con transparencia: sobre círculo blanco (de día) u oscuro (de noche)
                 lienzo.drawColor(blanco)
@@ -185,6 +204,59 @@ object Iconos {
                 Math.abs(Color.blue(it) - Color.blue(base)) < 40
         }
         return if (parecido) base or 0xFF000000.toInt() else null
+    }
+
+    /** ¿El fondo del icono es de un solo color (sin degradado)? */
+    private fun esParejo(b: Bitmap): Boolean {
+        val c = cajaContenido(b)
+        val dx = maxOf(2, c.width() / 12); val dy = maxOf(2, c.height() / 12)
+        val m = listOf(
+            b.getPixel(c.centerX(), c.top + dy), b.getPixel(c.centerX(), c.bottom - 1 - dy),
+            b.getPixel(c.left + dx, c.centerY()), b.getPixel(c.right - 1 - dx, c.centerY()),
+            b.getPixel(c.left + dx, c.top + dy), b.getPixel(c.right - 1 - dx, c.bottom - 1 - dy),
+        ).filter { Color.alpha(it) > 200 }
+        if (m.size < 4) return false
+        val r = m.map { Color.red(it) }; val g = m.map { Color.green(it) }; val bl = m.map { Color.blue(it) }
+        return r.max() - r.min() < 16 && g.max() - g.min() < 16 && bl.max() - bl.min() < 16
+    }
+
+    /**
+     * Vuelve transparente el fondo que toca los bordes de la imagen (relleno desde afuera),
+     * sin tocar lo que queda encerrado: el triángulo blanco de YouTube se conserva.
+     * Los bordes del logo quedan semitransparentes para que no se vea dentado.
+     */
+    private fun quitarFondoDelBorde(src: Bitmap, fondo: Int): Bitmap {
+        val w = src.width; val h = src.height
+        val px = IntArray(w * h); src.getPixels(px, 0, w, 0, 0, w, h)
+        val dist = { c: Int ->
+            maxOf(Math.abs(Color.red(c) - Color.red(fondo)),
+                Math.abs(Color.green(c) - Color.green(fondo)), Math.abs(Color.blue(c) - Color.blue(fondo)))
+        }
+        val visto = BooleanArray(w * h)
+        val cola = ArrayDeque<Int>()
+        for (x in 0 until w) { cola.add(x); cola.add((h - 1) * w + x) }
+        for (y in 0 until h) { cola.add(y * w); cola.add(y * w + w - 1) }
+        while (cola.isNotEmpty()) {
+            val i = cola.removeFirst()
+            if (visto[i]) continue
+            visto[i] = true
+            val c = px[i]
+            val transparente = Color.alpha(c) < 40
+            val d = if (transparente) 0 else dist(c)
+            when {
+                d <= 40 -> px[i] = 0                               // fondo: fuera
+                d < 130 -> {                                         // borde suave del logo
+                    val a = ((d - 40) * 255 / 90).coerceIn(0, 255)
+                    px[i] = (minOf(a, Color.alpha(c)) shl 24) or (c and 0x00FFFFFF)
+                    continue
+                }
+                else -> continue                                     // logo: no se sigue
+            }
+            val x = i % w; val y = i / w
+            if (x > 0) cola.add(i - 1); if (x < w - 1) cola.add(i + 1)
+            if (y > 0) cola.add(i - w); if (y < h - 1) cola.add(i + w)
+        }
+        return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888)
     }
 
     /** Icono propio: /sdcard/Android/data/com.geol.inicio/files/iconos/<paquete>.png (o .jpg/.webp). */
