@@ -5,7 +5,9 @@ Hecha desde cero por GeoL, con ayuda de Claude.
 
 - Reloj grande, fecha y saludo (buenos días / tardes / noches)
 - Clima de Barranquilla (Open-Meteo, sin cuenta ni clave)
-- Accesos rápidos: fondos, red, TV por cable, entradas HDMI (estas dos solo si el equipo las tiene) y ajustes
+- Accesos rápidos: fondos, red, día/noche, entradas HDMI (solo si el equipo las tiene) y ajustes
+- **Día / noche:** de 6 p. m. a 6 a. m. los iconos pasan a círculos oscuros. El botón recorre
+  Automático (con una "A") → Noche → Día
 - Iconos redondos al estilo del launcher de Google Pixel, en alta resolución
 - Dock centrado de hasta **8 apps**: los iconos se achican solos a medida que agregas apps.
   Los nombres largos se cortan por palabras ("Xuper Crystal Clear" → "Xuper")
@@ -48,10 +50,21 @@ Todo queda anotado en `debloat/registro-hisense.txt`.
 
 > El Wi-Fi de la Hisense puede dejar de funcionar. Se usa siempre por Ethernet.
 
+## Limpiar la TV box Xiaomi
+
+Misma idea, con su propia lista (incluye PatchWall) y sin tocar nada de red:
+
+```
+bash debloat/xiaomi.sh 192.168.1.9
+```
+
+Antes de cambiar algo muestra qué va a desactivar y pide confirmación.
+
 ## Deshacer
 
 ```
-bash debloat/deshacer.sh 192.168.1.49
+bash debloat/deshacer.sh 192.168.1.49   # TV Hisense
+bash debloat/deshacer.sh 192.168.1.9    # TV box Xiaomi
 ```
 
 ## Fondos de pantalla

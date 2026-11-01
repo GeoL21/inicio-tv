@@ -115,8 +115,32 @@
         <ImageButton android:id="@+id/btn_red" style="@style/BotonRapido"
             android:contentDescription="@string/red" android:src="@drawable/ic_red" />
 
-        <ImageButton android:id="@+id/btn_entradas" style="@style/BotonRapido"
-            android:contentDescription="@string/entradas" android:src="@drawable/ic_tv" />
+        <!-- Día / noche / automático (la "A" aparece en automático) -->
+        <FrameLayout
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="12dp"
+            android:clipChildren="false">
+
+            <ImageButton android:id="@+id/btn_modo" style="@style/BotonRapido"
+                android:layout_marginStart="0dp"
+                android:contentDescription="@string/modo" android:src="@drawable/ic_dia" />
+
+            <TextView
+                android:id="@+id/insignia_auto"
+                android:layout_width="17dp"
+                android:layout_height="17dp"
+                android:layout_gravity="bottom|end"
+                android:layout_marginEnd="-3dp"
+                android:layout_marginBottom="-3dp"
+                android:background="@drawable/insignia_auto"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:text="A"
+                android:textColor="@color/texto"
+                android:textFontWeight="500"
+                android:textSize="10sp" />
+        </FrameLayout>
 
         <ImageButton android:id="@+id/btn_hdmi" style="@style/BotonRapido"
             android:contentDescription="@string/hdmi" android:src="@drawable/ic_hdmi" />

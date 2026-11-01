@@ -33,23 +33,34 @@ object Iconos {
         "com.android.tv.settings" to (R.drawable.ic_ajustes to 0xFF5F6368.toInt()),
     )
 
-    fun de(ctx: Context, app: App, tamPx: Int): Bitmap {
-        val info = app.info ?: return simbolo(ctx, tamPx, R.drawable.ic_tv, 0xFF1A73E8.toInt(), 0.52f)
+    /** Fondo de los círculos en modo noche (opción A: círculo oscuro, logo a color). */
+    private const val OSCURO = 0xFF2A2A2E.toInt()
+
+    private fun esClaro(color: Int): Boolean {
+        val l = 0.2126 * Color.red(color) + 0.7152 * Color.green(color) + 0.0722 * Color.blue(color)
+        return Color.alpha(color) > 200 && l > 215
+    }
+
+    fun de(ctx: Context, app: App, tamPx: Int, noche: Boolean = false): Bitmap {
+        val info = app.info ?: return simbolo(ctx, tamPx, R.drawable.ic_tv,
+            if (noche) 0xFF8AB4F8.toInt() else 0xFF1A73E8.toInt(), 0.52f, noche)
         // Un icono propio copiado a la TV siempre gana
         if (iconoPropio(ctx, app.paquete) == null) {
-            SIMBOLOS[app.paquete]?.let { (dibujo, color) -> return simbolo(ctx, tamPx, dibujo, color, 0.5f) }
+            SIMBOLOS[app.paquete]?.let { (dibujo, color) ->
+                return simbolo(ctx, tamPx, dibujo, if (noche) 0xFFBDC1C6.toInt() else color, 0.5f, noche)
+            }
         }
-        return circular(ctx, info, tamPx)
+        return circular(ctx, info, tamPx, noche)
     }
 
     /** Círculo blanco con un símbolo de color, como los iconos de Google (Canales TV, Ajustes). */
-    private fun simbolo(ctx: Context, tamPx: Int, dibujo: Int, color: Int, factor: Float): Bitmap {
-        val clave = "simbolo/$dibujo/$tamPx"
+    private fun simbolo(ctx: Context, tamPx: Int, dibujo: Int, color: Int, factor: Float, noche: Boolean): Bitmap {
+        val clave = "simbolo/$dibujo/$tamPx/$noche"
         cache.get(clave)?.let { return it }
         val bmp = Bitmap.createBitmap(tamPx, tamPx, Bitmap.Config.ARGB_8888)
         val lienzo = Canvas(bmp)
         val s = tamPx.toFloat()
-        lienzo.drawCircle(s / 2, s / 2, s / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = Color.WHITE })
+        lienzo.drawCircle(s / 2, s / 2, s / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = if (noche) OSCURO else Color.WHITE })
         val d = ctx.getDrawable(dibujo)!!.mutate()
         d.setTint(color)
         val lado = (s * factor).toInt()
@@ -60,12 +71,13 @@ object Iconos {
         return bmp
     }
 
-    fun circular(ctx: Context, info: ActivityInfo, tamPx: Int): Bitmap {
+    fun circular(ctx: Context, info: ActivityInfo, tamPx: Int, noche: Boolean = false): Bitmap {
         val version = try {
             ctx.packageManager.getPackageInfo(info.packageName, 0).lastUpdateTime
         } catch (e: Exception) { 0L }
         val propio = iconoPropio(ctx, info.packageName)
-        val clave = "${info.packageName}/${info.name}/$tamPx/$version/${propio?.lastModified() ?: 0}"
+        val clave = "${info.packageName}/${info.name}/$tamPx/$version/${propio?.lastModified() ?: 0}/$noche"
+        val blanco = if (noche) OSCURO else Color.WHITE
         cache.get(clave)?.let { return it }
 
         val contenido = Bitmap.createBitmap(tamPx, tamPx, Bitmap.Config.ARGB_8888)
@@ -85,12 +97,25 @@ object Iconos {
         } else if (banner != null) {
             // Icono viejo y pequeño (se vería pixelado): se usa el banner de TV, en alta resolución
             val fondoBanner = dibujar(banner, 64, 1f).getPixel(2, 32)
-            lienzo.drawColor(if (Color.alpha(fondoBanner) > 200) fondoBanner else Color.WHITE)
+            lienzo.drawColor(when {
+                Color.alpha(fondoBanner) <= 200 -> blanco
+                noche && esClaro(fondoBanner) -> OSCURO
+                else -> fondoBanner
+            })
             lienzo.drawBitmap(dibujar(banner, tamPx, 0.74f), 0f, 0f, null)
         } else if (d is AdaptiveIconDrawable) {
             // Las capas miden 1,5 veces el icono; el círculo muestra el centro
             val extra = tamPx / 4
-            for (capa in listOf(d.background, d.foreground)) {
+            val fondo = d.background
+            // De noche, un fondo de icono blanco o muy claro se cambia por el círculo oscuro
+            val fondoClaro = noche && fondo != null && run {
+                val m = Bitmap.createBitmap(8, 8, Bitmap.Config.ARGB_8888)
+                fondo.setBounds(0, 0, 8, 8); fondo.draw(Canvas(m))
+                val c = Bitmap.createScaledBitmap(m, 1, 1, true).getPixel(0, 0)
+                esClaro(c)
+            }
+            if (fondoClaro) lienzo.drawColor(OSCURO)
+            for (capa in listOf(if (fondoClaro) null else fondo, d.foreground)) {
                 capa ?: continue
                 capa.setBounds(-extra, -extra, tamPx + extra, tamPx + extra)
                 capa.draw(lienzo)
@@ -104,7 +129,7 @@ object Iconos {
                 // Ya es redondo: se agranda un poco para llenar el círculo
                 lienzo.drawBitmap(dibujar(d, tamPx, 1.06f), 0f, 0f, null)
             } else {
-                lienzo.drawColor(Color.WHITE)
+                lienzo.drawColor(blanco)
                 val factor = if (!esquinaVacia) 0.62f else 0.72f
                 lienzo.drawBitmap(dibujar(d, tamPx, factor), 0f, 0f, null)
             }

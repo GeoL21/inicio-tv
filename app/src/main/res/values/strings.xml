@@ -26,4 +26,8 @@
     <string name="quitar_nombre">Quitar nombre</string>
     <string name="cancelar">Cancelar</string>
     <string name="dock_lleno">Ya tienes 8 apps en el inicio. Quita una para agregar otra</string>
+    <string name="modo">Día y noche</string>
+    <string name="modo_auto">Automático: noche de 6 p. m. a 6 a. m.</string>
+    <string name="modo_noche">Modo noche</string>
+    <string name="modo_dia">Modo día</string>
 </resources>

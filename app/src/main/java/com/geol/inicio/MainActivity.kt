@@ -49,6 +49,7 @@ class MainActivity : Activity() {
     private val cadaMinuto = object : Runnable {
         override fun run() {
             actualizarFechaYSaludo()
+            aplicarModo(forzar = false)   // a las 6 p. m. y 6 a. m. cambia solo
             if (System.currentTimeMillis() - ultimoClima > 30 * 60_000L) actualizarClima()
             manejador.postDelayed(this, 60_000L)
         }
@@ -76,12 +77,17 @@ class MainActivity : Activity() {
             abrirAjuste(Settings.ACTION_SETTINGS)
         }
 
-        // Cable/antena y HDMI: se ocultan en equipos que no los tienen (la TV box)
-        val btnTv = findViewById<ImageButton>(R.id.btn_entradas)
-        if (Entradas.paqueteTv(this) == null) btnTv.visibility = View.GONE
-        btnTv.setOnClickListener {
-            if (!Entradas.abrirCable(this)) aviso(R.string.sin_entradas)
+        // Día / noche / automático
+        findViewById<ImageButton>(R.id.btn_modo).setOnClickListener {
+            aviso(when (Modo.siguiente(this)) {
+                Modo.Estado.AUTOMATICO -> R.string.modo_auto
+                Modo.Estado.NOCHE -> R.string.modo_noche
+                Modo.Estado.DIA -> R.string.modo_dia
+            })
+            aplicarModo(forzar = true)
         }
+
+        // HDMI: se oculta en equipos que no lo tienen (la TV box)
         val btnHdmi = findViewById<ImageButton>(R.id.btn_hdmi)
         if (!Entradas.tieneHdmi(this)) btnHdmi.visibility = View.GONE
         btnHdmi.setOnClickListener { abrirPanelEntradas() }
@@ -105,6 +111,7 @@ class MainActivity : Activity() {
         super.onResume()
         revisarFondo()
         todas = Apps.todas(this)
+        noche = Modo.esNoche(this)
         cuadricula.adapter = AdaptadorCajon()
         if (moviendo == null) armarFila(enfocar = !cajonAbierto)
         Fuente.aplicar(window.decorView)
@@ -182,7 +189,7 @@ class MainActivity : Activity() {
             vista.findViewById<View>(R.id.marco).layoutParams.apply {
                 width = px(iconoDp + 10); height = px(iconoDp + 10)
             }
-            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this, app, px(iconoDp)))
+            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this, app, px(iconoDp), noche))
             val etiqueta = vista.findViewById<TextView>(R.id.nombre)
             etiqueta.textSize = if (n <= 6) 13f else 12f
             vista.setOnClickListener { if (!Apps.abrir(this, app.paquete)) aviso(R.string.no_abre) }
@@ -309,7 +316,7 @@ class MainActivity : Activity() {
                     Fuente.aplicar(this)
                 }
             val app = todas[pos]
-            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this@MainActivity, app, tam))
+            vista.findViewById<ImageView>(R.id.icono).setImageBitmap(Iconos.de(this@MainActivity, app, tam, noche))
             val etiqueta = vista.findViewById<TextView>(R.id.nombre)
             etiqueta.textSize = 12f
             etiqueta.text = cortarPorPalabras(app.nombre, etiqueta, 96 * dp)
@@ -328,6 +335,23 @@ class MainActivity : Activity() {
         val fondo = findViewById<ImageView>(R.id.fondo)
         val bmp = Fondos.cargar(this, Fondos.actual(this), 1920)
         if (bmp != null) fondo.setImageBitmap(bmp) else fondo.setImageResource(R.drawable.fondo)
+    }
+
+    /** ¿Los iconos se dibujan en modo noche? */
+    private var noche = false
+
+    /** Actualiza el botón y, si cambió día/noche, vuelve a dibujar los iconos. */
+    private fun aplicarModo(forzar: Boolean) {
+        val estado = Modo.estado(this)
+        val ahora = Modo.esNoche(this)
+        findViewById<ImageButton>(R.id.btn_modo).setImageResource(if (ahora) R.drawable.ic_luna else R.drawable.ic_dia)
+        findViewById<View>(R.id.insignia_auto).visibility =
+            if (estado == Modo.Estado.AUTOMATICO) View.VISIBLE else View.GONE
+        if (ahora != noche || forzar) {
+            noche = ahora
+            if (moviendo == null) armarFila(enfocar = currentFocus?.parent == fila)
+            (cuadricula.adapter as? BaseAdapter)?.notifyDataSetChanged()
+        }
     }
 
     private fun actualizarFechaYSaludo() {
