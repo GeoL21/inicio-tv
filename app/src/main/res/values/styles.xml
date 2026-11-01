@@ -23,4 +23,32 @@
         <item name="android:textFontWeight">500</item>
         <item name="android:focusable">true</item>
     </style>
+    <style name="Pestana">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingStart">18dp</item>
+        <item name="android:paddingEnd">18dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">10dp</item>
+        <item name="android:background">@drawable/pestana</item>
+        <item name="android:textColor">@color/pestana_texto</item>
+        <item name="android:textSize">17sp</item>
+        <item name="android:textFontWeight">500</item>
+        <item name="android:focusable">true</item>
+    </style>
+    <style name="CuadriculaFondos">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:clipToPadding">false</item>
+        <item name="android:columnWidth">232dp</item>
+        <item name="android:drawSelectorOnTop">false</item>
+        <item name="android:horizontalSpacing">20dp</item>
+        <item name="android:listSelector">@android:color/transparent</item>
+        <item name="android:numColumns">auto_fit</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">40dp</item>
+        <item name="android:scrollbars">none</item>
+        <item name="android:stretchMode">none</item>
+        <item name="android:verticalSpacing">20dp</item>
+    </style>
 </resources>

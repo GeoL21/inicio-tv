@@ -24,7 +24,13 @@ object Fondos {
     )
     private val EXTENSIONES = setOf("jpg", "jpeg", "png", "webp")
 
-    private fun carpeta(ctx: Context): File? =
+    private const val OCULTOS = "fondos_ocultos"
+
+    /** Incluidos que el usuario borró (siguen dentro del APK, solo no se muestran). */
+    private fun ocultos(ctx: Context): Set<String> =
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getStringSet(OCULTOS, emptySet()) ?: emptySet()
+
+    fun carpeta(ctx: Context): File? =
         ctx.getExternalFilesDir(null)?.let { File(it, "fondos").apply { mkdirs() } }
 
     private fun archivo(ctx: Context, clave: String): File? =
@@ -34,15 +40,39 @@ object Fondos {
         val propios = carpeta(ctx)?.listFiles { f -> f.extension.lowercase() in EXTENSIONES }
             ?.sortedBy { it.name.lowercase() }
             ?.map { Fondo("archivo:${it.name}", it.nameWithoutExtension) } ?: emptyList()
-        return INCLUIDOS.map { Fondo(it.first, it.second) } + propios
+        val ocultos = ocultos(ctx)
+        return INCLUIDOS.filter { it.first !in ocultos }.map { Fondo(it.first, it.second) } + propios
     }
+
+    /**
+     * Borra un fondo: los descargados o copiados se eliminan de la TV; los incluidos se ocultan.
+     * Siempre debe quedar al menos uno. Si se borra el que está puesto, pasa al primero que quede.
+     */
+    fun borrar(ctx: Context, clave: String): Boolean {
+        val lista = todos(ctx)
+        if (lista.size <= 1 || lista.none { it.clave == clave }) return false
+        val f = archivo(ctx, clave)
+        if (f != null) { if (!f.delete()) return false }
+        else {
+            val prefs = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            prefs.edit().putStringSet(OCULTOS, ocultos(ctx) + clave).apply()
+        }
+        if (actual(ctx) == clave || ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(CLAVE, null) == clave)
+            elegir(ctx, todos(ctx).first().clave)
+        return true
+    }
+
+    /** Primer fondo disponible (por si el elegido ya no existe). */
+    private fun primero(ctx: Context): String = todos(ctx).firstOrNull()?.clave ?: INCLUIDOS[0].first
 
     /** El fondo elegido; si el archivo elegido ya no existe, vuelve al original. */
     fun actual(ctx: Context): String {
         val clave = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getString(CLAVE, null) ?: return INCLUIDOS[0].first
+            .getString(CLAVE, null) ?: return primero(ctx)
         val f = archivo(ctx, clave)
-        return if (f != null && !f.exists()) INCLUIDOS[0].first else clave
+        if (f != null && !f.exists()) return primero(ctx)
+        if (f == null && clave in ocultos(ctx)) return primero(ctx)
+        return clave
     }
 
     fun elegir(ctx: Context, clave: String) {

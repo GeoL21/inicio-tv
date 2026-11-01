@@ -15,7 +15,7 @@
     <string name="no_abre">No se pudo abrir</string>
     <string name="ayuda_apps">Mantén OK para fijar o quitar del inicio</string>
     <string name="fondos">Fondos</string>
-    <string name="ayuda_fondos">OK para usar · el actual tiene marca</string>
+    <string name="ayuda_fondos">OK para usar · mantén OK para borrar</string>
     <string name="entradas_titulo">Entradas</string>
     <string name="conectado">Conectado</string>
     <string name="sin_senal">Sin señal</string>
@@ -37,4 +37,21 @@
     <string name="sv_elegir">↑ para elegir</string>
     <string name="sv_continuar">OK para continuar</string>
     <string name="sv_mas">OK para continuar · ← → más</string>
+    <string name="mis_fondos">Mis fondos</string>
+    <string name="en_linea">En línea</string>
+    <string name="buscar">Buscar</string>
+    <string name="ayuda_linea">OK para descargar y usar · se guarda en la TV · Fondos de Wallhaven</string>
+    <string name="cargando">Cargando…</string>
+    <string name="descargando">Descargando…</string>
+    <string name="sin_conexion">Sin conexión a internet. Revisa la red e inténtalo de nuevo.</string>
+    <string name="sin_resultados">No hay resultados. Prueba con otra palabra.</string>
+    <string name="muchas_busquedas">Demasiadas búsquedas seguidas. Espera un minuto.</string>
+    <string name="buscar_titulo">Buscar fondos</string>
+    <string name="buscar_ejemplo">montañas, playa al atardecer…</string>
+    <string name="fondo_guardado">Fondo guardado en la TV</string>
+    <string name="no_descargo">No se pudo descargar. Inténtalo otra vez.</string>
+    <string name="borrar_fondo">¿Borrar «%1$s»?</string>
+    <string name="borrar">Borrar</string>
+    <string name="fondo_borrado">Fondo borrado</string>
+    <string name="ultimo_fondo">Debe quedar al menos un fondo</string>
 </resources>

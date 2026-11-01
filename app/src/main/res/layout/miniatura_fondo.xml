@@ -34,4 +34,27 @@
         android:importantForAccessibility="no"
         android:src="@drawable/marca_actual"
         android:visibility="gone" />
+    <!-- Descarga en curso (solo en línea) -->
+    <FrameLayout
+        android:id="@+id/descarga"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#99000000"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="@string/descargando"
+            android:textColor="@color/texto"
+            android:textSize="15sp" />
+
+        <View
+            android:id="@+id/progreso_descarga"
+            android:layout_width="0dp"
+            android:layout_height="3dp"
+            android:layout_gravity="bottom|start"
+            android:background="#FFFFFFFF" />
+    </FrameLayout>
 </FrameLayout>

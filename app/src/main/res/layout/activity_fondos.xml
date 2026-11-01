@@ -58,29 +58,67 @@
                 android:text="@string/tematicos" />
         </LinearLayout>
 
+        <!-- Pestañas: Mis fondos | En línea -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:layout_marginStart="-18dp"
+            android:orientation="horizontal">
+
+            <TextView android:id="@+id/tab_mios" style="@style/Pestana" android:text="@string/mis_fondos" />
+            <TextView android:id="@+id/tab_linea" style="@style/Pestana" android:layout_marginStart="6dp" android:text="@string/en_linea" />
+        </LinearLayout>
+
+        <!-- Categorías y buscador (solo en línea) -->
+        <HorizontalScrollView
+            android:id="@+id/fila_categorias"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:clipToPadding="false"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/categorias"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+
         <TextView
+            android:id="@+id/ayuda"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="20dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="14dp"
             android:text="@string/ayuda_fondos"
             android:textColor="@color/texto_suave"
             android:textSize="15sp" />
 
-        <GridView
-            android:id="@+id/cuadricula"
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:columnWidth="232dp"
-            android:drawSelectorOnTop="false"
-            android:horizontalSpacing="20dp"
-            android:listSelector="@android:color/transparent"
-            android:numColumns="auto_fit"
-            android:paddingTop="8dp"
-            android:paddingBottom="40dp"
-            android:scrollbars="none"
-            android:stretchMode="none"
-            android:verticalSpacing="20dp" />
+            android:layout_height="match_parent">
+
+            <GridView
+                android:id="@+id/cuadricula"
+                style="@style/CuadriculaFondos" />
+
+            <GridView
+                android:id="@+id/cuadricula_linea"
+                style="@style/CuadriculaFondos"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/mensaje_linea"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="80dp"
+                android:textColor="@color/texto_suave"
+                android:textSize="17sp"
+                android:visibility="gone" />
+        </FrameLayout>
     </LinearLayout>
 </FrameLayout>

@@ -86,8 +86,14 @@ adb -s 192.168.1.9:5555 shell pm grant com.geol.inicio android.permission.READ_T
 
 ## Fondos de pantalla
 
-El botón de imagen (arriba, junto a red) abre **Fondos**: miniaturas de los 5 fondos
-incluidos y de los tuyos. OK aplica el fondo al instante; el actual tiene una marca.
+El botón de imagen (arriba, junto a red) abre **Fondos**, con dos pestañas:
+
+- **Mis fondos**: los incluidos y los guardados en la TV. OK aplica el fondo al instante; el actual
+  tiene una marca. Mantener OK borra uno (siempre queda al menos uno).
+- **En línea**: fondos de [Wallhaven](https://wallhaven.cc) (sin cuenta ni clave), solo contenido
+  general, 16:9 y de al menos 1920×1080. Categorías (Destacados, Paisajes, Playa, Ciudades, Espacio,
+  Bosque, Abstracto, Oscuros) y un buscador que traduce al inglés las palabras comunes.
+  OK descarga la foto, la reduce a 1920 px, la guarda en la TV y la pone de fondo; después no usa internet.
 
 Para agregar fotos propias (JPG, PNG o WEBP; 1920×1080 es suficiente):
 
